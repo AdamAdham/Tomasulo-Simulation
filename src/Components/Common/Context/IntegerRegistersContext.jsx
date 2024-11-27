@@ -6,7 +6,7 @@ export const IntegerRegistersContext = createContext();
 // Create Provider Component
 let temp = {};
 for (let i = 0; i < 30; i++) {
-  temp[`R${i}`] = 0;
+  temp[`R${i}`] = { value: 0, Qi: 0 };
 }
 export const IntegerRegistersProvider = ({ children }) => {
   const [integerRegisters, setIntegerRegisters] = useState(temp);

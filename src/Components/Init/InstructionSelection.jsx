@@ -24,6 +24,12 @@ import Button from "@mui/material/Button";
 import CloseIcon from "@mui/icons-material/Close";
 import AlertTitle from "@mui/material/AlertTitle";
 import { InstructionsContext } from "../Common/Context/InstructionsContext";
+import {
+  integerAluOpcodes,
+  floatingAluOpcodes,
+  loadStoreOpcodes,
+  opcodeList,
+} from "../../Constants/Constants";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -58,38 +64,6 @@ function a11yProps(index) {
   };
 }
 
-const opcodeList = [
-  // ALU Operations (Floating-Point)
-  "ADD.D", // Floating-Point Add
-  "SUB.D", // Floating-Point Subtract
-  "MUL.D", // Floating-Point Multiply
-  "DIV.D", // Floating-Point Divide,
-
-  // Integer Operations
-  "ADDI", // Integer Add Immediate
-  "SUBI", // Integer Subtract Immediate
-
-  // Load Operations
-  "LW", // Load Word
-  "LD", // Load Double Word
-  "L.S", // Load Single-Precision Floating Point
-  "L.D", // Load Double-Precision Floating Point
-
-  // Store Operations
-  "SW", // Store Word
-  "SD", // Store Double Word
-  "S.S", // Store Single-Precision Floating Point
-  "S.D", // Store Double-Precision Floating Point
-
-  // Branch Instructions
-  "BEQ", // Branch if Equal
-  "BNE", // Branch if Not Equal
-  "J", // Jump (unconditional branch)
-];
-const integerAluOpcodes = ["ADDI", "SUBI"];
-const loadStoreOpcodes = ["LW", "LD", "L.S", "L.D", "SW", "SD", "S.S", "S.D"];
-const floatingAluOpcodes = ["ADD.D", "SUB.D", "MUL.D", "DIV.D"];
-const branchOpcodes = ["BEQ", "BNE", "J"];
 const integerRegisters = Array.from({ length: 30 }, (_, index) => `R${index}`);
 const floatingRegisters = Array.from({ length: 30 }, (_, index) => `F${index}`);
 
@@ -98,25 +72,24 @@ const InstructionSelection = () => {
 
   const [errorMessage, setErrorMessage] = useState(null);
 
-  const [label, setLabel] = useState(null);
-  const [toLabel, setToLabel] = useState(null); // Destination is a label for branch intructions
-  const [opcode, setOpcode] = useState(null);
-  const [R1, setR1] = useState(null);
-  const [R2, setR2] = useState(null);
-  const [R3, setR3] = useState(null);
-  const [immediate, setImmediate] = useState(null);
-  const [effective, setEffective] = useState(null);
+  const [label, setLabel] = useState("");
+  const [toLabel, setToLabel] = useState(""); // Destination is a label for branch intructions
+  const [opcode, setOpcode] = useState("");
+  const [R1, setR1] = useState("");
+  const [R2, setR2] = useState("");
+  const [R3, setR3] = useState("");
+  const [immediate, setImmediate] = useState("");
+  const [effective, setEffective] = useState("");
   const [openFeedback, setOpenFeedback] = useState(false);
 
   const resetValues = (except) => {
     if (except != 1) {
       setR1(null);
-    } else {
-      setR2(null);
-      setR3(null);
-      setImmediate(null);
-      setEffective(null);
     }
+    setR2(null);
+    setR3(null);
+    setImmediate(null);
+    setEffective(null);
   };
   useEffect(() => {
     resetValues();
@@ -148,8 +121,9 @@ const InstructionSelection = () => {
     let value = parseInt(event.target.value, 10); // Convert to integer
     if (isNaN(value)) {
       value = 0; // Default to 0 if the input is not a valid number
-    } else if (value > 65535) {
-      value = 65535;
+    } else if (value > 1.8446744e19 + 65535) {
+      // Because maximum is Max Register (1.8446744e19)(64bits) + Max Immediate (65535)(16bits)
+      value = 1.8446744e19 + 65535;
     }
     setEffective(value);
   };
@@ -208,7 +182,7 @@ const InstructionSelection = () => {
       }
     } else if (opcode === "BEQ" || opcode === "BNE") {
       if (R1 && R2 && toLabel) {
-        const instruction = { R1, R2, toLabel, label };
+        const instruction = { opcode, R1, R2, toLabel, label };
         setInstructions((prev) => [...prev, instruction]); // Corrected to use array
       } else {
         setOpenFeedback(true);
@@ -217,12 +191,15 @@ const InstructionSelection = () => {
     }
   };
 
-  useEffect(() => {
-    console.log(instructions);
-  }, [instructions]);
-
   return (
     <div>
+      <h1
+        style={
+          loadStoreOpcodes.includes(opcode) ? { marginBottom: "100px" } : {}
+        }
+      >
+        Initialize Instructions
+      </h1>
       <div
         style={{ display: "flex", margin: "0 40px", justifyContent: "center" }}
       >
@@ -294,12 +271,22 @@ const InstructionSelection = () => {
 
         {/* Loads and Stores*/}
         {loadStoreOpcodes.includes(opcode) ? (
-          <DropDown
-            value={R1}
-            label={"REG1"}
-            onChange={handleR1Change}
-            dropDownItems={floatingRegisters}
-          />
+          ["LW", "LD", "SW", "SD"].includes(opcode) ? (
+            <DropDown
+              value={R1}
+              label={"REG1"}
+              onChange={handleR1Change}
+              dropDownItems={integerRegisters}
+            />
+          ) : (
+            // Floating load/store
+            <DropDown
+              value={R1}
+              label={"REG1"}
+              onChange={handleR1Change}
+              dropDownItems={floatingRegisters}
+            />
+          )
         ) : null}
 
         {/* Tabs for effective address or register and offset combo */}

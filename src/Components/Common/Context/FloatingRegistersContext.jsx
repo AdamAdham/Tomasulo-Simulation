@@ -5,7 +5,7 @@ export const FloatingRegistersContext = createContext();
 
 let temp = {};
 for (let i = 0; i < 30; i++) {
-  temp[`F${i}`] = 0;
+  temp[`F${i}`] = { value: 0, Qi: 0 };
 }
 // Create Provider Component
 export const FloatingRegistersProvider = ({ children }) => {

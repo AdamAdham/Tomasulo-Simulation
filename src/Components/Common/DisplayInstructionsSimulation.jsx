@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Table } from "antd";
-import "./test.css";
 import { InstructionsContext } from "../Common/Context/InstructionsContext";
 
 const columns = [
@@ -40,15 +39,34 @@ const columns = [
     title: "Destination Label",
     dataIndex: "toLabel",
   },
+  {
+    title: <div style={{ fontSize: "16px", fontWeight: "900" }}>Issue</div>,
+    dataIndex: "issue",
+  },
+  {
+    title: (
+      <div style={{ fontSize: "16px", fontWeight: "900" }}>Exec Start</div>
+    ),
+    dataIndex: "execStart",
+  },
+  {
+    title: <div style={{ fontSize: "16px", fontWeight: "900" }}>Exec End</div>,
+    dataIndex: "execEnd",
+  },
+  {
+    title: (
+      <div style={{ fontSize: "16px", fontWeight: "900" }}>Write Result</div>
+    ),
+    dataIndex: "writeResult",
+  },
 ];
 
-const DisplayInstructions = () => {
-  const { instructions, setInstructions } = useContext(InstructionsContext);
+const DisplayInstructionsSimulation = ({ instructions }) => {
   const [instructionsTable, setInstructionsTable] = useState(null);
 
   useEffect(() => {
     // Just add key, to remove the error
-    let instructionsTableTemp = instructions.map((instruction, index) => {
+    let instructionsTableTemp = instructions?.map((instruction, index) => {
       return { ...instruction, key: index };
     });
     setInstructionsTable(instructionsTableTemp);
@@ -66,4 +84,4 @@ const DisplayInstructions = () => {
     </div>
   );
 };
-export default DisplayInstructions;
+export default DisplayInstructionsSimulation;

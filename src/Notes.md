@@ -68,11 +68,35 @@
 
 ASK:
 
-Integer ALU ops are in the arch, does it issue, execute etc, wala zay el fel lecture done the clk cycle it is? Do we need to also input the
-LD and Stores ignore address clashes?
-Write allocate,no write allocate?
-Cache block size range will be larger than 8 bytes?
+Integer ALU ops are in the arch, does it issue, execute etc, wala zay el fel lecture done the clk cycle it is? (says you can enter a res station fa eh el flow bezabt)
+Branch ops (BEQ,BNE) are only integer register ones?
+Branch ops since they integer ones they will enter the arch?
+When will we know the outcome?
 
-cache bel sizes, init
-memory any size not specified (each element 8 bits)
-cache array of (8 bits) (wait for response)
+LD and Stores ignore address clashes? So msh lazem el heta el akheera fel lectures?
+integer load and stores LD,LW,SD,SW will be used in load and store buffers not integer res station?
+
+CACHE:
+Write allocate,no write allocate? (when storing, do we get the value into cache)
+assume Write through?
+assume Cache block size range will be larger than 8 bytes? because if not double precision hayetgab ezay law keda?
+cache hit and miss etc, hayetzawed 3al execute wala hangeeb if(hit)min(exec,hit) , if(miss) min(exec,miss)?
+
+# Flow
+
+array of objects, each object = {cache:cacheContent, integerRegisters:integerRegistersContent, floatingRegisters:floatingRegisterContent, memory:memoryContent, buffers, resStations, etc..}
+each index in the array represents the clk cycle you are in, you will always have the previous clks there, if index is null (not done yet we simulate the clk cycle using a function `Simulation`)
+
+## Simulation
+
+parameters:
+instructions,
+cache,
+integerRegisters,
+floatingRegisters,
+memory,
+buffers,
+resStations,
+latencies,
+
+Next clk cycle

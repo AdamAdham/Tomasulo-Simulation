@@ -5,6 +5,9 @@ import { CacheContext } from "../Common/Context/CacheContext";
 import { InstructionLatencyContext } from "../Common/Context/InstructionLatencyContext";
 import { ResourcesContext } from "../Common/Context/ResourcesContext";
 
+import { isNumberLessThan, powerOfTwo } from "../Common/Functions";
+import { memorySize } from "../../Constants/Constants";
+
 const InitStatistics = () => {
   const {
     cacheLatency,
@@ -33,18 +36,57 @@ const InitStatistics = () => {
   } = useContext(InstructionLatencyContext);
 
   const {
-    loadBuffer,
-    setLoadBuffer,
-    storeBuffer,
-    setStoreBuffer,
-    addSubRes,
-    setAddSubRes,
-    mulDivRes,
-    setMulDivRes,
-    integerRes,
-    setIntegerRes,
+    loadBufferSize,
+    setLoadBufferSize,
+    storeBufferSize,
+    setStoreBufferSize,
+    addSubResSize,
+    setAddSubResSize,
+    mulDivResSize,
+    setMulDivResSize,
+    integerResSize,
+    setIntegerResSize,
   } = useContext(ResourcesContext);
 
+  const handleCacheLatency = (e) => {
+    const value = isNumberLessThan(e.target.value, null);
+    setCacheLatency(value);
+  };
+
+  const handleCachePenalty = (e) => {
+    const value = isNumberLessThan(e.target.value, null);
+    setCachePenalty(value);
+  };
+
+  const handleCacheSize = (e) => {
+    let value = powerOfTwo(e.target.value);
+    if (value < 64) {
+      // cannot have block size less than 64 for double precision load/stores
+      value = 64;
+    }
+    if (value > memorySize) {
+      value = memorySize;
+    }
+    setCacheSize(value);
+  };
+
+  const handleGreaterZeroChange = (value, setter) => {
+    const num = Number(value);
+    setter(num >= 0 ? num : 0); // Ensure value is >= 0, otherwise set to 0
+  };
+
+  const handleBlockSize = (e) => {
+    let value = powerOfTwo(e.target.value);
+    if (value < 64) {
+      // cannot have block size less than 64 for double precision load/stores
+      value = 64;
+    }
+    if (value > cacheSize) {
+      // Cannot have block size greater than cache size
+      value = cacheSize;
+    }
+    setBlockSize(value);
+  };
   return (
     <div style={{ display: "grid" }}>
       <div>
@@ -54,7 +96,7 @@ const InitStatistics = () => {
           label="Hit Latency"
           variant="outlined"
           value={cacheLatency}
-          onChange={(e) => setCacheLatency(e.target.value)}
+          onChange={handleCacheLatency}
           style={{ width: "110px", marginLeft: "20px" }}
         />
         <TextField
@@ -62,7 +104,7 @@ const InitStatistics = () => {
           label="Cache Penalty"
           variant="outlined"
           value={cachePenalty}
-          onChange={(e) => setCachePenalty(e.target.value)}
+          onChange={handleCachePenalty}
           style={{ width: "110px", marginLeft: "20px" }}
         />
         <TextField
@@ -71,6 +113,7 @@ const InitStatistics = () => {
           variant="outlined"
           value={cacheSize}
           onChange={(e) => setCacheSize(e.target.value)}
+          onBlur={handleCacheSize}
           style={{ width: "110px", marginLeft: "20px" }}
         />
         <TextField
@@ -78,6 +121,7 @@ const InitStatistics = () => {
           label="Block Size"
           variant="outlined"
           value={blockSize}
+          onBlur={handleBlockSize}
           onChange={(e) => setBlockSize(e.target.value)}
           style={{ width: "110px", marginLeft: "20px" }}
         />
@@ -89,7 +133,9 @@ const InitStatistics = () => {
           label="Store Latency"
           variant="outlined"
           value={latencyStore}
-          onChange={(e) => setLatencyStore(Number(e.target.value))}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setLatencyStore)
+          }
           style={{ width: "150px", marginLeft: "20px" }}
         />
 
@@ -98,7 +144,9 @@ const InitStatistics = () => {
           label="Load Latency"
           variant="outlined"
           value={latencyLoad}
-          onChange={(e) => setLatencyLoad(Number(e.target.value))}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setLatencyLoad)
+          }
           style={{ width: "150px", marginLeft: "20px" }}
         />
 
@@ -107,7 +155,9 @@ const InitStatistics = () => {
           label="Add Latency"
           variant="outlined"
           value={latencyAdd}
-          onChange={(e) => setLatencyAdd(Number(e.target.value))}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setLatencyAdd)
+          }
           style={{ width: "150px", marginLeft: "20px" }}
         />
 
@@ -116,7 +166,9 @@ const InitStatistics = () => {
           label="Subtract Latency"
           variant="outlined"
           value={latencySub}
-          onChange={(e) => setLatencySub(Number(e.target.value))}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setLatencySub)
+          }
           style={{ width: "150px", marginLeft: "20px" }}
         />
 
@@ -125,7 +177,9 @@ const InitStatistics = () => {
           label="Multiply Latency"
           variant="outlined"
           value={latencyMultiply}
-          onChange={(e) => setLatencyMultiply(Number(e.target.value))}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setLatencyMultiply)
+          }
           style={{ width: "150px", marginLeft: "20px" }}
         />
 
@@ -134,45 +188,61 @@ const InitStatistics = () => {
           label="Divide Latency"
           variant="outlined"
           value={latencyDivide}
-          onChange={(e) => setLatencyDivide(Number(e.target.value))}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setLatencyDivide)
+          }
           style={{ width: "150px", marginLeft: "20px" }}
         />
       </div>
       <div>
         <h3>Resources</h3>
         <TextField
-          label="Load Buffer"
+          label="Load BufferSize"
           variant="outlined"
-          value={loadBuffer}
-          onChange={(e) => setLoadBuffer(Number(e.target.value))}
+          value={loadBufferSize}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setLoadBufferSize)
+          }
           style={{ width: "200px", marginRight: "20px" }}
         />
+
         <TextField
-          label="Store Buffer"
+          label="Store BufferSize"
           variant="outlined"
-          value={storeBuffer}
-          onChange={(e) => setStoreBuffer(Number(e.target.value))}
+          value={storeBufferSize}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setStoreBufferSize)
+          }
           style={{ width: "200px", marginRight: "20px" }}
         />
+
         <TextField
-          label="Add/Sub Resources"
+          label="Add/Sub RS"
           variant="outlined"
-          value={addSubRes}
-          onChange={(e) => setAddSubRes(Number(e.target.value))}
+          value={addSubResSize}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setAddSubResSize)
+          }
           style={{ width: "200px", marginRight: "20px" }}
         />
+
         <TextField
-          label="Mul/Div Resources"
+          label="Mul/Div RS"
           variant="outlined"
-          value={mulDivRes}
-          onChange={(e) => setMulDivRes(Number(e.target.value))}
+          value={mulDivResSize}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setMulDivResSize)
+          }
           style={{ width: "200px", marginRight: "20px" }}
         />
+
         <TextField
-          label="Integer Resources"
+          label="Integer RS"
           variant="outlined"
-          value={integerRes}
-          onChange={(e) => setIntegerRes(Number(e.target.value))}
+          value={integerResSize}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setIntegerResSize)
+          }
           style={{ width: "200px", marginRight: "20px" }}
         />
       </div>

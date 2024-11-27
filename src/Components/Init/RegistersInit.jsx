@@ -8,11 +8,17 @@ import CheckIcon from "@mui/icons-material/Check";
 
 import { FloatingRegistersContext } from "../Common/Context/FloatingRegistersContext";
 import { IntegerRegistersContext } from "../Common/Context/IntegerRegistersContext";
+import DisplayIntegerRegisters from "../Common/DisplayIntegerRegisters";
+import DisplayfloatingRegisters from "../Common/DisplayFloatingRegisters";
 
 const columns = [
   {
     title: "Register",
     dataIndex: "registerName",
+  },
+  {
+    title: "Qi",
+    dataIndex: "Qi",
   },
   {
     title: "Value",
@@ -23,49 +29,44 @@ const RegistersInit = () => {
   const { integerRegisters, setIntegerRegisters } = useContext(
     IntegerRegistersContext
   );
-  const [integerRegistersTable, setIntegerRegistersTable] = useState([]);
 
   const { floatingRegisters, setFloatingRegisters } = useContext(
     FloatingRegistersContext
   );
-  const [floatingRegistersTable, setFloatingRegistersTable] = useState([]);
 
-  const [floatingRegister, setFloatingRegister] = useState(null);
-  const [floatingValue, setFloatingValue] = useState(null);
+  const [floatingRegister, setFloatingRegister] = useState("F0");
+  const [floatingValue, setFloatingValue] = useState(0);
 
-  const [integerRegister, setIntegerRegister] = useState(null);
-  const [integerValue, setIntegerValue] = useState(null);
+  const [integerRegister, setIntegerRegister] = useState("R0");
+  const [integerValue, setIntegerValue] = useState(0);
 
   const modifyFloatingRegister = () => {
     setFloatingRegisters((prev) => ({
       ...prev,
-      [floatingRegister]: floatingValue,
+      [floatingRegister]: { ...prev[floatingRegister], value: floatingValue },
     }));
   };
 
   const modifyIntegerRegister = () => {
     setIntegerRegisters((prev) => ({
       ...prev,
-      [integerRegister]: integerValue,
+      [integerRegister]: { ...prev[integerRegister], value: integerValue },
     }));
   };
 
-  useEffect(() => {
-    const temp = [];
-    Object.keys(integerRegisters).forEach((key) => {
-      temp.push({ registerName: key, value: integerRegisters[key] });
-    });
-    setIntegerRegistersTable(temp);
-    console.log("temp", temp);
-  }, [integerRegisters]);
-
-  useEffect(() => {
-    const temp = [];
-    Object.keys(floatingRegisters).forEach((key) => {
-      temp.push({ registerName: key, value: floatingRegisters[key] });
-    });
-    setFloatingRegistersTable(temp);
-  }, [floatingRegisters]);
+  const handleRegisterValue = (value, type) => {
+    let temp = parseInt(value, 10); // Convert to integer
+    if (isNaN(temp)) {
+      temp = 0; // Default to 0 if the input is not a valid number
+    } else if (temp > 1.8446744e19) {
+      temp = 1.8446744e19;
+    }
+    if (type == "integer") {
+      setIntegerValue(temp);
+    } else {
+      setFloatingValue(temp);
+    }
+  };
 
   return (
     <div
@@ -97,7 +98,7 @@ const RegistersInit = () => {
             label="Value"
             variant="outlined"
             value={integerValue}
-            onChange={(e) => setIntegerValue(e.target.value)}
+            onChange={(e) => handleRegisterValue(e.target.value, "integer")}
             style={{ width: "110px", marginLeft: "20px" }}
           />
           <IconButton
@@ -115,13 +116,7 @@ const RegistersInit = () => {
           </IconButton>
         </div>
 
-        <Table
-          bordered
-          columns={columns}
-          dataSource={integerRegistersTable}
-          title={() => <h1 style={{ margin: "0" }}>Integer Registers</h1>}
-          pagination={{ position: ["bottomCenter"] }}
-        />
+        <DisplayIntegerRegisters integerRegisters={integerRegisters} />
       </div>
       <div>
         <div
@@ -144,7 +139,7 @@ const RegistersInit = () => {
             label="Value"
             variant="outlined"
             value={floatingValue}
-            onChange={(e) => setFloatingValue(e.target.value)}
+            onChange={(e) => handleRegisterValue(e.target.value, "floating")}
             style={{ width: "110px", marginLeft: "20px" }}
           />
           <IconButton
@@ -162,15 +157,7 @@ const RegistersInit = () => {
           </IconButton>
         </div>
 
-        <Table
-          bordered
-          columns={columns}
-          dataSource={floatingRegistersTable}
-          title={() => (
-            <h1 style={{ margin: "0" }}>Floating Point Registers</h1>
-          )}
-          pagination={{ position: ["bottomCenter"] }}
-        />
+        <DisplayfloatingRegisters floatingRegisters={floatingRegisters} />
       </div>
     </div>
   );
