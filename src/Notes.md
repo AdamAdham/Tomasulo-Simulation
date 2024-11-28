@@ -59,7 +59,7 @@
     # Questions
 
     - Do we need single precision alu operations? Double (if not will get informed)
-    - Do we need other integer operations than "ADDI","SUBI"? (if not will informed)
+    - Do we need other integer operations than "ADDI","SUBI"? YES (if not will informed)
     - Size of memory?
     - What if the addition exceeds memory? modulus w khalas
     - No branch prediction? Branch result when "issued"
@@ -68,19 +68,19 @@
 
 ASK:
 
-Integer ALU ops are in the arch, does it issue, execute etc, wala zay el fel lecture done the clk cycle it is? (says you can enter a res station fa eh el flow bezabt)
-Branch ops (BEQ,BNE) are only integer register ones?
-Branch ops since they integer ones they will enter the arch?
-When will we know the outcome?
+Integer ALU ops are in the arch, does it issue, execute etc, wala zay el fel lecture done the clk cycle it is? Ta3amal akenaha floating 3ady
+Branch ops (BEQ,BNE) are only integer register ones? Integer only
+Branch ops since they integer ones they will enter the arch? Used in integer res station (and no issues until branch exec complete)
+When will we know the outcome? user will input
 
 LD and Stores ignore address clashes? So msh lazem el heta el akheera fel lectures?
-integer load and stores LD,LW,SD,SW will be used in load and store buffers not integer res station?
+integer load and stores LD,LW,SD,SW will be used in load and store buffers not integer res station? WILL ANSWER ME
 
 CACHE:
-Write allocate,no write allocate? (when storing, do we get the value into cache)
-assume Write through?
-assume Cache block size range will be larger than 8 bytes? because if not double precision hayetgab ezay law keda?
-cache hit and miss etc, hayetzawed 3al execute wala hangeeb if(hit)min(exec,hit) , if(miss) min(exec,miss)?
+Write allocate,no write allocate? (when storing, do we get the value into cache) (el enta 3ayzo) wrte allocate
+assume Write through? (el enta 3ayzo) Write through
+assume Cache block size range will be larger than 8 bytes? because if not double precision hayetgab ezay law keda? Said okay
+cache hit and miss etc, hayetzawed 3al execute wala hangeeb if(hit)min(exec,hit) , if(miss) min(exec,miss)? Disregard hit time now (will answer) Penalty will just add to ld and store latency
 
 # Flow
 

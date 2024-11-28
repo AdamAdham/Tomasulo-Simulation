@@ -55,7 +55,6 @@ const issue = (
   integerRes,
   clock
 ) => {
-  let instructionsIssuesFinished = false;
   instructions = [
     { R1: "F0", R2: "F4", R3: "F21", label: "LOOP", opcode: "ADD.D" },
     { R1: "F4", R2: "F8", R3: "F12", label: "", opcode: "DIV.D" },
@@ -66,6 +65,232 @@ const issue = (
     { R1: "F0", R2: "F0", toLabel: "LOOP", label: "" },
     { R1: "F0", R2: "F0", toLabel: "LOOP", label: "" },
   ];
+
+  loadBuffer = [
+    {
+      tag: "L0",
+      busy: 1,
+      opcode: "LD",
+      Vj: 50,
+      Vk: null,
+      Qj: 0,
+      Qk: "R2",
+    },
+    {
+      tag: "L1",
+      busy: 1,
+      opcode: "LD",
+      Vj: null,
+      Vk: 75,
+      Qj: "R1",
+      Qk: 0,
+    },
+    {
+      tag: "L2",
+      busy: 0,
+      opcode: null,
+      Vj: null,
+      Vk: null,
+      Qj: null,
+      Qk: null,
+    },
+  ];
+
+  storeBuffer = [
+    {
+      tag: "S0",
+      busy: 1,
+      opcode: "SD",
+      Vj: 100,
+      Vk: null,
+      Qj: 0,
+      Qk: "R4",
+    },
+    {
+      tag: "S1",
+      busy: 0,
+      opcode: null,
+      Vj: null,
+      Vk: null,
+      Qj: null,
+      Qk: null,
+    },
+    {
+      tag: "S2",
+      busy: 1,
+      opcode: "SW",
+      Vj: null,
+      Vk: 60,
+      Qj: "R3",
+      Qk: 0,
+    },
+  ];
+
+  addSubRes = [
+    {
+      tag: "A0",
+      busy: 1,
+      opcode: "ADD.D",
+      Vj: 25,
+      Vk: null,
+      Qj: 0,
+      Qk: "R5",
+    },
+    {
+      tag: "A1",
+      busy: 1,
+      opcode: "SUB.D",
+      Vj: null,
+      Vk: 45,
+      Qj: "R6",
+      Qk: 0,
+    },
+    {
+      tag: "A2",
+      busy: 0,
+      opcode: null,
+      Vj: null,
+      Vk: null,
+      Qj: null,
+      Qk: null,
+    },
+  ];
+
+  mulDivRes = [
+    {
+      tag: "M0",
+      busy: 1,
+      opcode: "MUL.D",
+      Vj: 80,
+      Vk: null,
+      Qj: 0,
+      Qk: "R7",
+    },
+    {
+      tag: "M1",
+      busy: 0,
+      opcode: null,
+      Vj: null,
+      Vk: null,
+      Qj: null,
+      Qk: null,
+    },
+    {
+      tag: "M2",
+      busy: 1,
+      opcode: "DIV.D",
+      Vj: null,
+      Vk: 120,
+      Qj: "R8",
+      Qk: 0,
+    },
+  ];
+
+  integerRes = [
+    {
+      tag: "I0",
+      busy: 1,
+      opcode: "ADD",
+      Vj: 10,
+      Vk: null,
+      Qj: 0,
+      Qk: "R9",
+    },
+    {
+      tag: "I1",
+      busy: 1,
+      opcode: "SUB",
+      Vj: null,
+      Vk: 20,
+      Qj: "R10",
+      Qk: 0,
+    },
+    {
+      tag: "I2",
+      busy: 0,
+      opcode: null,
+      Vj: null,
+      Vk: null,
+      Qj: null,
+      Qk: null,
+    },
+  ];
+  const currentInstructionIndex = getCurrentInstruction(instructions);
+
+  if (currentInstructionIndex != 0 && !currentInstructionIndex) return null; // Either Stall(branch) or no instructions left then we dont issue an instruction
+  // There is a current instruction
+  const instruction = instructions[currentInstructionIndex];
+
+  // Check for structural hazards if not:
+  // return resource and the index in the resource to put the instruction and its tag
+  const resourceRes = selectResource(
+    instruction,
+    loadBuffer,
+    storeBuffer,
+    addSubRes,
+    mulDivRes,
+    integerRes
+  );
+
+  if (!resourceRes) return null; // Stall or no intructions since no resource avaliable
+  const resourceName = resourceRes.resourceName;
+  const rowIndex = rowRes.resourceIndex;
+  const rowTag = rowRes.rowTag;
+
+  // Update Register file with row tag and get row details
+  const updateRegsValuesGetRowRes = updateRegsValuesGetRow(
+    instruction,
+    integerRegisters,
+    floatingRegisters,
+    rowTag
+  );
+  if (!updateRegsValuesGetRowRes) return null; // DK why
+  const rowDetails = updateRegsValuesGetRowRes.row;
+  integerRegisters = updateRegsValuesGetRowRes.integerRegisters;
+  floatingRegisters = updateRegsValuesGetRowRes.floatingRegisters;
+
+  // Update buffer/reservation station
+  switch (resourceName) {
+    case "loadBuffer":
+      loadBuffer[rowIndex] = rowDetails;
+      break;
+    case "storeBuffer":
+      storeBuffer[rowIndex] = rowDetails;
+      break;
+    case "addSubRes":
+      addSubRes[rowIndex] = rowDetails;
+      break;
+    case "mulDivRes":
+      mulDivRes[rowIndex] = rowDetails;
+      break;
+    case "integerRes":
+      integerRes[rowIndex] = rowDetails;
+      break;
+    default:
+      console.error(`Invalid resource name: ${resourceName}`);
+  }
+
+  // If has come to this point then the instruction has successfully issued so just update the instruction to issue at the current clock cycle
+  instructions[currentInstructionIndex] = {
+    ...instructions[currentInstructionIndex],
+    issue: clock,
+  };
+
+  // Return updated values of register file, instructions and buffers/Reservation stations
+  return {
+    instructions,
+    integerRegisters,
+    floatingRegisters,
+    loadBuffer,
+    storeBuffer,
+    addSubRes,
+    mulDivRes,
+    integerRes,
+  };
+};
+
+const getCurrentInstruction = (instructions) => {
+  let instructionsIssuesFinished = false;
 
   // Loop through instructions to check the last issued one
   let mostRecentIssue = -1;
@@ -89,32 +314,32 @@ const issue = (
     previousInstruction &&
     branchOpcodes.includes(previousInstruction?.opcode)
   ) {
-    // There is a previous instruction and the previous instruction is
-    // Branch logic
+    // There is a previous instruction and the previous instruction is a branch
+
+    if (!previousInstruction.writeResult) return null; // If did not write result stall since no branch prediction
+    // If here then it has written the result
     const label = instructions[mostRecentIssueIndex].toLabel;
     instructions.forEach((instr, index) => {
       if (instr.label === label) {
         currentInstructionIndex = index;
         currentInstruction = instr;
-        return;
-      } else {
-        // No label is = to the label in the Jump/Branch
-        return null;
+        return; // Exit forEach
       }
     });
+    if (!currentInstruction) return nulll; // There is a branch to an invalid label
   } else {
     // No previous insruction OR previous instruction is not a branch
     // So next instruction is a the next one in the queue
-    if (mostRecentIssueIndex >= instructions.length) {
+    if (mostRecentIssueIndex + 1 >= instructions.length) {
       // Previous instruction not a branch and the most recent issued is the last one in the instructions
       // So the issues have finished
       instructionsIssuesFinished = true;
       return null; // We do not do anything
     }
+    currentInstructionIndex = mostRecentIssueIndex + 1;
     currentInstruction = instructions[mostRecentIssueIndex + 1];
   }
-
-  // Check for structural hazards
+  return currentInstructionIndex;
 };
 
 /**
@@ -138,9 +363,10 @@ const issue = (
  *   @property {number|null} Vk - The value of the second operand (or null if not yet available).
  *
  * @returns {Object|null} - Details about the selected resource or `null` if no suitable resource is available.
+ *   @property {String} resourceName - The name of reservation station.
  *   @property {Array<Object>} resource - The array representing the selected buffer or reservation station.
  *   @property {number} resourceIndex - The index of the selected resource within the array.
- *   @property {string} resourceTag - A unique tag representing the selected resource (e.g., "L0", "S1", "A2", "M3", "I4").
+ *   @property {string} rowTag - A unique tag representing the selected resource (e.g., "L0", "S1", "A2", "M3", "I4").
  *   Returns `null` if no available slot is found, indicating a stall condition.
  *
  * @example
@@ -166,7 +392,7 @@ const issue = (
  * // {
  * //   resource: addSubRes,
  * //   resourceIndex: 0,
- * //   resourceTag: "A0"
+ * //   rowTag: "A0"
  * // }
  *
  * // If no resource is available:
@@ -191,9 +417,9 @@ const selectResource = (
   integerRes
 ) => {
   const opcode = instruction?.opcode;
-  let resource = null;
+  let resourceName = null;
   let resourceIndex = -1;
-  let resourceTag = null;
+  let rowTag = null;
 
   if (loadOpcodes.includes(opcode)) {
     // TODO TOASK
@@ -201,9 +427,9 @@ const selectResource = (
     loadBuffer.forEach((bufferEl, index) => {
       if (bufferEl.busy == 0) {
         // Found a vacant slot
-        resource = loadBuffer;
+        resourceName = "loadBuffer";
         resourceIndex = index;
-        resourceTag = `L${index}`;
+        rowTag = `L${index}`;
       }
     });
   } else if (storeOpcodes.includes(opcode)) {
@@ -211,27 +437,27 @@ const selectResource = (
     storeBuffer.forEach((bufferEl, index) => {
       if (bufferEl.busy == 0) {
         // Found a vacant slot
-        resource = storeBuffer;
+        resourceName = "storeBuffer";
         resourceIndex = index;
-        resourceTag = `S${index}`;
+        rowTag = `S${index}`;
       }
     });
   } else if (addSubFloatingOpcodes.includes(opcode)) {
     addSubRes.forEach((reservation, index) => {
       if (reservation.busy == 0) {
         // Found a vacant slot
-        resource = addSubRes;
+        resourceName = "addSubRes";
         resourceIndex = index;
-        resourceTag = `A${index}`;
+        rowTag = `A${index}`;
       }
     });
   } else if (mulDivFloatingOpcodes.includes(opcode)) {
     mulDivRes.forEach((reservation, index) => {
       if (reservation.busy == 0) {
         // Found a vacant slot
-        resource = mulDivRes;
+        resourceName = "mulDivRes";
         resourceIndex = index;
-        resourceTag = `M${index}`;
+        rowTag = `M${index}`;
       }
     });
   } else if (
@@ -243,15 +469,15 @@ const selectResource = (
     integerRes.forEach((reservation, index) => {
       if (reservation.busy == 0) {
         // Found a vacant slot
-        resource = integerRes;
+        resourceName = "integerRes";
         resourceIndex = index;
-        resourceTag = `I${index}`;
+        rowTag = `I${index}`;
       }
     });
   }
 
   if (!resource) return null; // No vacant space in corresponding reservation station/buffer so ==> STALL
-  return { resource, resourceIndex, resourceTag };
+  return { resourceName, resourceIndex, rowTag };
 };
 
 const resourceCheck = (instruction, resource) => {
@@ -284,7 +510,7 @@ const resourceCheck = (instruction, resource) => {
  * @param {Object} floatingRegisters - The current state of the floating-point register file.
  *   Each key represents a floating-point register (e.g., "F0", "F1", ..., "F29"), and its value is the current value stored in that register.
  *
- * @param {string} resourceTag - A unique tag representing the reservation station or buffer that this instruction occupies.
+ * @param {string} rowTag - A unique tag representing the reservation station or buffer that this instruction occupies.
  *   This tag is used to update the register file to indicate which resource is producing a result for the instruction.
  *
  * @returns {Object} - The updated state of the reservation station buffer and register files.
@@ -319,9 +545,9 @@ const resourceCheck = (instruction, resource) => {
  *   F0: 0.0, F1: 1.0, F2: 5.0, F3: 10.0, F4: 0.0, F5: 0.0, // ... up to F29
  * };
  *
- * const resourceTag = "M1";
+ * const rowTag = "M1";
  *
- * const result = updateRsBufferRegsValues(instruction, integerRegisters, floatingRegisters, resourceTag);
+ * const result = updateRsBufferRegsValues(instruction, integerRegisters, floatingRegisters, rowTag);
  *
  * console.log(result.row);
  * // {
@@ -338,11 +564,11 @@ const resourceCheck = (instruction, resource) => {
  * console.log(result.floatingRegisters);
  * // Updated floatingRegisters object
  */
-const updateRsBufferRegsValues = (
+const updateRegsValuesGetRow = (
   instruction,
   integerRegisters,
   floatingRegisters,
-  resourceTag
+  rowTag
 ) => {
   const reg1 = instruction.R1;
   const reg1Type = reg1[0];
@@ -354,11 +580,11 @@ const updateRsBufferRegsValues = (
   let register2Obj = null;
   let register3Obj = null;
 
-  //
+  // Set register tags to wait for
   if (reg1Type == "F") {
-    floatingRegisters[reg1] = { ...floatingRegisters[reg1], Qi: resourceTag };
+    floatingRegisters[reg1] = { ...floatingRegisters[reg1], Qi: rowTag };
   } else {
-    integerRegisters[reg1] = { ...integerRegisters[reg1], Qi: resourceTag };
+    integerRegisters[reg1] = { ...integerRegisters[reg1], Qi: rowTag };
   }
 
   // Get register Objects
@@ -374,7 +600,7 @@ const updateRsBufferRegsValues = (
     register3Obj = integerRegisters[reg3];
   }
 
-  let row = { tag: resourceTag, busy: 1, opcode: instruction.opcode }; // Resource row (instr in buffer or reservation station)
+  let row = { tag: rowTag, busy: 1, opcode: instruction.opcode }; // Resource row (instr in buffer or reservation station)
   // Update instuction according to registers
   if (register2Obj.Qi != 0) {
     row = { ...row, Qj: register2Obj.Qi };
@@ -382,7 +608,6 @@ const updateRsBufferRegsValues = (
     row = { ...row, Vj: register2Obj.value };
   }
 
-  console.log(register3Obj);
   if (register3Obj.Qi != 0) {
     row = { ...row, Qk: register3Obj.Qj };
   } else {
@@ -408,77 +633,81 @@ const simulateNextClock = (
   clock
 ) => {};
 
-updateRsBufferRegsValues(
-  {
-    R1: "F0",
-    R2: "F4",
-    R3: "F21",
-    label: "LOOP",
-    opcode: "ADD.D",
-  },
-  {
-    R0: { value: 0, Qi: 0 },
-    R1: { value: 0, Qi: 0 },
-    R2: { value: 0, Qi: 0 },
-    R3: { value: 0, Qi: 0 },
-    R4: { value: 0, Qi: 0 },
-    R5: { value: 0, Qi: 0 },
-    R6: { value: 0, Qi: 0 },
-    R7: { value: 0, Qi: 0 },
-    R8: { value: 0, Qi: 0 },
-    R9: { value: 0, Qi: 0 },
-    R10: { value: 0, Qi: 0 },
-    R11: { value: 0, Qi: 0 },
-    R12: { value: 0, Qi: 0 },
-    R13: { value: 0, Qi: 0 },
-    R14: { value: 0, Qi: 0 },
-    R15: { value: 0, Qi: 0 },
-    R16: { value: 0, Qi: 0 },
-    R17: { value: 0, Qi: 0 },
-    R18: { value: 0, Qi: 0 },
-    R19: { value: 0, Qi: 0 },
-    R20: { value: 0, Qi: 0 },
-    R21: { value: 0, Qi: 0 },
-    R22: { value: 0, Qi: 0 },
-    R23: { value: 0, Qi: 0 },
-    R24: { value: 0, Qi: 0 },
-    R25: { value: 0, Qi: 0 },
-    R26: { value: 0, Qi: 0 },
-    R27: { value: 0, Qi: 0 },
-    R28: { value: 0, Qi: 0 },
-    R29: { value: 0, Qi: 0 },
-  },
-  {
-    F0: { value: 0, Qi: 0 },
-    F1: { value: 0, Qi: 0 },
-    F2: { value: 0, Qi: 0 },
-    F3: { value: 0, Qi: 0 },
-    F4: { value: 10, Qi: 0 },
-    F5: { value: 0, Qi: 0 },
-    F6: { value: 0, Qi: 0 },
-    F7: { value: 0, Qi: 0 },
-    F8: { value: 0, Qi: 0 },
-    F9: { value: 0, Qi: 0 },
-    F10: { value: 0, Qi: 0 },
-    F11: { value: 0, Qi: 0 },
-    F12: { value: 0, Qi: 0 },
-    F13: { value: 0, Qi: 0 },
-    F14: { value: 0, Qi: 0 },
-    F15: { value: 0, Qi: 0 },
-    F16: { value: 0, Qi: 0 },
-    F17: { value: 0, Qi: 0 },
-    F18: { value: 0, Qi: 0 },
-    F19: { value: 0, Qi: 0 },
-    F20: { value: 0, Qi: 0 },
-    F21: { value: 99, Qi: 0 },
-    F22: { value: 0, Qi: 0 },
-    F23: { value: 0, Qi: 0 },
-    F24: { value: 0, Qi: 0 },
-    F25: { value: 0, Qi: 0 },
-    F26: { value: 0, Qi: 0 },
-    F27: { value: 0, Qi: 0 },
-    F28: { value: 0, Qi: 0 },
-    F29: { value: 0, Qi: 0 },
-  },
-  "M1"
-);
+// console.log("here");
+
+issue(null);
+
+// updateRsBufferRegsValues(
+//   {
+//     R1: "F0",
+//     R2: "F4",
+//     R3: "F21",
+//     label: "LOOP",
+//     opcode: "ADD.D",
+//   },
+//   {
+//     R0: { value: 0, Qi: 0 },
+//     R1: { value: 0, Qi: 0 },
+//     R2: { value: 0, Qi: 0 },
+//     R3: { value: 0, Qi: 0 },
+//     R4: { value: 0, Qi: 0 },
+//     R5: { value: 0, Qi: 0 },
+//     R6: { value: 0, Qi: 0 },
+//     R7: { value: 0, Qi: 0 },
+//     R8: { value: 0, Qi: 0 },
+//     R9: { value: 0, Qi: 0 },
+//     R10: { value: 0, Qi: 0 },
+//     R11: { value: 0, Qi: 0 },
+//     R12: { value: 0, Qi: 0 },
+//     R13: { value: 0, Qi: 0 },
+//     R14: { value: 0, Qi: 0 },
+//     R15: { value: 0, Qi: 0 },
+//     R16: { value: 0, Qi: 0 },
+//     R17: { value: 0, Qi: 0 },
+//     R18: { value: 0, Qi: 0 },
+//     R19: { value: 0, Qi: 0 },
+//     R20: { value: 0, Qi: 0 },
+//     R21: { value: 0, Qi: 0 },
+//     R22: { value: 0, Qi: 0 },
+//     R23: { value: 0, Qi: 0 },
+//     R24: { value: 0, Qi: 0 },
+//     R25: { value: 0, Qi: 0 },
+//     R26: { value: 0, Qi: 0 },
+//     R27: { value: 0, Qi: 0 },
+//     R28: { value: 0, Qi: 0 },
+//     R29: { value: 0, Qi: 0 },
+//   },
+//   {
+//     F0: { value: 0, Qi: 0 },
+//     F1: { value: 0, Qi: 0 },
+//     F2: { value: 0, Qi: 0 },
+//     F3: { value: 0, Qi: 0 },
+//     F4: { value: 10, Qi: 0 },
+//     F5: { value: 0, Qi: 0 },
+//     F6: { value: 0, Qi: 0 },
+//     F7: { value: 0, Qi: 0 },
+//     F8: { value: 0, Qi: 0 },
+//     F9: { value: 0, Qi: 0 },
+//     F10: { value: 0, Qi: 0 },
+//     F11: { value: 0, Qi: 0 },
+//     F12: { value: 0, Qi: 0 },
+//     F13: { value: 0, Qi: 0 },
+//     F14: { value: 0, Qi: 0 },
+//     F15: { value: 0, Qi: 0 },
+//     F16: { value: 0, Qi: 0 },
+//     F17: { value: 0, Qi: 0 },
+//     F18: { value: 0, Qi: 0 },
+//     F19: { value: 0, Qi: 0 },
+//     F20: { value: 0, Qi: 0 },
+//     F21: { value: 99, Qi: 0 },
+//     F22: { value: 0, Qi: 0 },
+//     F23: { value: 0, Qi: 0 },
+//     F24: { value: 0, Qi: 0 },
+//     F25: { value: 0, Qi: 0 },
+//     F26: { value: 0, Qi: 0 },
+//     F27: { value: 0, Qi: 0 },
+//     F28: { value: 0, Qi: 0 },
+//     F29: { value: 0, Qi: 0 },
+//   },
+//   "M1"
+// );
