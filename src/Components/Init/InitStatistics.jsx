@@ -33,6 +33,10 @@ const InitStatistics = () => {
     setLatencyMultiply,
     latencyDivide,
     setLatencyDivide,
+    latencyIntegerAdd,
+    setLatencyIntegerAdd,
+    latencyIntegerSub,
+    setLatencyIntegerSub,
   } = useContext(InstructionLatencyContext);
 
   const {
@@ -49,7 +53,12 @@ const InitStatistics = () => {
   } = useContext(ResourcesContext);
 
   const handleCacheLatency = (e) => {
-    const value = isNumberLessThan(e.target.value, null);
+    // TA said that the hit time is actually included in the load/store latencies
+    // TODO TEST THIS
+    const value = isNumberLessThan(
+      e.target.value,
+      Math.min(latencyLoad, latencyStore)
+    );
     setCacheLatency(value);
   };
 
@@ -190,6 +199,28 @@ const InitStatistics = () => {
           value={latencyDivide}
           onChange={(e) =>
             handleGreaterZeroChange(e.target.value, setLatencyDivide)
+          }
+          style={{ width: "150px", marginLeft: "20px" }}
+        />
+
+        <TextField
+          id="latency-integer-sub"
+          label="Integer Sub Latency"
+          variant="outlined"
+          value={latencyIntegerSub}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setLatencyIntegerSub)
+          }
+          style={{ width: "150px", marginLeft: "20px" }}
+        />
+
+        <TextField
+          id="latency-integer-add"
+          label="Integer Add Latency"
+          variant="outlined"
+          value={latencyIntegerAdd}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setLatencyIntegerAdd)
           }
           style={{ width: "150px", marginLeft: "20px" }}
         />

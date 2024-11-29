@@ -58,9 +58,9 @@
 
     # Questions
 
-    - Do we need single precision alu operations? Double (if not will get informed)
-    - Do we need other integer operations than "ADDI","SUBI"? YES (if not will informed)
-    - Size of memory?
+    - Do we need single precision alu operations? Double (if not will get informed) (ask tany)
+    - Do we need other integer operations than "ADDI","SUBI"? NO (if not will informed)
+    - Size of memory? Enta hor
     - What if the addition exceeds memory? modulus w khalas
     - No branch prediction? Branch result when "issued"
     - Which model is needed? With reorder buffer? (tomasulo 3ady)

@@ -27,8 +27,8 @@ const columns = [
     dataIndex: "Qj",
   },
   {
-    title: "Qj",
-    dataIndex: "Qj",
+    title: "Qk",
+    dataIndex: "Qk",
   },
   {
     title: "A",

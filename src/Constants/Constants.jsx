@@ -43,3 +43,5 @@ export const loadOpcodes = ["LW", "LD", "L.S", "L.D"];
 export const storeOpcodes = ["SW", "SD", "S.S", "S.D"];
 export const floatingAluOpcodes = ["ADD.D", "SUB.D", "MUL.D", "DIV.D"];
 export const branchOpcodes = ["BEQ", "BNE", "J"];
+export const addSubFloatingOpcodes = ["ADD.D", "SUB.D"];
+export const mulDivFloatingOpcodes = ["MUL.D", "DIV.D"];
