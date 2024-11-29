@@ -11,20 +11,29 @@ export const CacheProvider = ({ children }) => {
   const [cacheSize, setCacheSize] = useState(1024); // Default value in KB
   const [blockSize, setBlockSize] = useState(64); // Default value in bytes
   const [cache, setCache] = useState([]);
+  const [validity, setValidity] = useState([]);
+  const [tags, setTags] = useState([]);
 
   const initializeCache = () => {
     let sets = cacheSize / blockSize;
     let cacheTemp = [];
     let block = [];
+    let tagsTemp = [];
+    let validityTemp = [];
     for (let i = 0; i < blockSize / 8; i++) {
       // create block of size BlockSize/8
-      block.push(0);
+      block.push("empty");
     }
     for (let i = 0; i < sets; i++) {
       // create block of size BlockSize/8
       cacheTemp.push(block);
+      tagsTemp.push("empty");
+      validityTemp.push(0);
     }
+    
     setCache(cacheTemp);
+    setValidity(validityTemp);
+    setTags(tagsTemp);
   };
 
   return (
@@ -41,6 +50,10 @@ export const CacheProvider = ({ children }) => {
         cache,
         setCache,
         initializeCache,
+        validity,
+        setValidity,
+        tags,
+        setTags,
       }}
     >
       {children}
