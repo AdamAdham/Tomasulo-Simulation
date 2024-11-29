@@ -84,12 +84,13 @@ const InstructionSelection = () => {
 
   const resetValues = (except) => {
     if (except != 1) {
-      setR1(null);
+      setR1("");
     }
-    setR2(null);
-    setR3(null);
-    setImmediate(null);
-    setEffective(null);
+    setR2("");
+    setR3("");
+    setImmediate("");
+    setEffective("");
+    setLabel("");
   };
   useEffect(() => {
     resetValues();
@@ -353,13 +354,13 @@ const InstructionSelection = () => {
               value={R1}
               label={"REG1"}
               onChange={handleR1Change}
-              dropDownItems={floatingRegisters}
+              dropDownItems={integerRegisters}
             />
             <DropDown
               value={R2}
               label={"REG2"}
               onChange={handleR2Change}
-              dropDownItems={floatingRegisters}
+              dropDownItems={integerRegisters}
             />
             <TextField
               id="outlined-basic"

@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect } from "react";
 import { Divider, Tabs } from "antd";
+import { Button } from "@mui/material";
 
 import { CacheContext } from "../Common/Context/CacheContext";
 import { IntegerRegistersContext } from "../Common/Context/IntegerRegistersContext";
@@ -11,10 +12,12 @@ import { SimulationContext } from "../Common/Context/SimulationContext";
 import DisplayRegisters from "../Common/DisplayRegisters";
 import DisplayInstructionsSimulation from "../Common/DisplayInstructionsSimulation";
 import ClockControl from "../Common/ClockControl";
-import { ResourcesContext } from "../Common/Context/ResourcesContext";
 import DisplayStations from "../Common/DisplayStations";
 import DisplayStation from "../Common/DisplayStation";
+
+import { ResourcesContext } from "../Common/Context/ResourcesContext";
 import { simulateNextClock } from "../Common/Functions";
+import { MemoryContext } from "../Common/Context/MemoryContext";
 
 const Simulation = () => {
   const { instructions, setInstructions } = useContext(InstructionsContext);
@@ -40,11 +43,7 @@ const Simulation = () => {
     integerRes,
     setIntegerRes,
   } = useContext(ResourcesContext);
-  console.log("Instructions", instructions);
-  console.log("integerRegister", integerRegisters);
-  console.log("floatingRegister", floatingRegisters);
-
-  console.log(loadBuffer, storeBuffer, addSubRes, mulDivRes, integerRes);
+  const { memory, setMemory } = useContext(MemoryContext);
 
   const [tabItems, setTabItems] = useState([
     {
@@ -114,52 +113,66 @@ const Simulation = () => {
     ]);
   }, [integerRegisters]);
 
+  const setContext = (simulationInstance) => {
+    setInstructions([...simulationInstance.instructions]);
+    setIntegerRegisters({ ...simulationInstance.integerRegisters });
+    setFloatingRegisters({ ...simulationInstance.floatingRegisters });
+    setCache([...simulationInstance.cache]);
+    setMemory([...simulationInstance.memory]);
+    setLoadBuffer([...simulationInstance.loadBuffer]);
+    setStoreBuffer([...simulationInstance.storeBuffer]);
+    setAddSubRes([...simulationInstance.addSubRes]);
+    setMulDivRes([...simulationInstance.mulDivRes]);
+    setIntegerRes([...simulationInstance.integerRes]);
+  };
   useEffect(() => {
     if (simulation[clock]) {
       // Have already done it
-      setInstructions(simulation[clock].instructions);
-      setIntegerRegisters(simulation[clock].integerRegisters);
-      setFloatingRegisters(simulation[clock].floatingRegisters);
-      setCache(simulation[clock].cache);
-      setLoadBuffer(simulation[clock].loadBuffer);
-      setStoreBuffer(simulation[clock].storeBuffer);
-      setAddSubRes(simulation[clock].addSubRes);
-      setMulDivRes(simulation[clock].setMulDivRes);
-      setIntegerRes(simulation[clock].setIntegerRes);
+      setContext(simulation[clock]);
     } else {
       // Has not been simulated
       // Generate new values
       // Give values of previous clock cycle
       // Get values of current cycle
+
       const nextSimulation = simulateNextClock(
         instructions,
         integerRegisters,
         floatingRegisters,
         cache,
+        memory,
         loadBuffer,
         storeBuffer,
         addSubRes,
-        setMulDivRes,
-        setIntegerRes,
+        mulDivRes,
+        integerRes,
         clock // Produce values for that clock cycle (current clock cycle)
       );
+      // console.log("nextSim", nextSimulation);
 
       // Set new values to be displayed
-      if (!nextSimulation) return;
-      setInstructions(simulation[clock].instructions);
-      setIntegerRegisters(simulation[clock].integerRegisters);
-      setFloatingRegisters(simulation[clock].floatingRegisters);
-      setCache(simulation[clock].cache);
-      setLoadBuffer(simulation[clock].loadBuffer);
-      setStoreBuffer(simulation[clock].storeBuffer);
-      setAddSubRes(simulation[clock].addSubRes);
-      setMulDivRes(simulation[clock].setMulDivRes);
-      setIntegerRes(simulation[clock].setIntegerRes);
-
+      if (!nextSimulation) return; // Error occured not sure TODO
       // Set new values so that when clk is the same again we just get the value directly with no simulation
-      setSimulation((prev) => prev.push(nextSimulation));
+      setSimulation((prev) => [...prev, nextSimulation]);
     }
   }, [clock]);
+
+  useEffect(() => {
+    if (simulation[clock]) {
+      setContext(simulation[clock]);
+    }
+  }, [simulation]);
+
+  const resetSimulation = () => {
+    setClock(0);
+    const initialSimulation = JSON.parse(
+      localStorage.getItem("initialSimulation")
+    );
+    // console.log("initialSimulation", initialSimulation);
+
+    setSimulation([initialSimulation]);
+  };
+
   return (
     <div
       style={{
@@ -170,11 +183,22 @@ const Simulation = () => {
     >
       <h1 style={{ marginTop: "30px", fontSize: "40px" }}>Simulation</h1>
       <Divider />
-      <ClockControl
-        clock={clock}
-        incrementClock={incrementClock}
-        decrementClock={decrementClock}
-      />
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <Button
+          variant="outlined"
+          color="error"
+          style={{ margin: "40px", fontSize: "15px", borderRadius: "10px" }}
+          onClick={resetSimulation}
+        >
+          Reset
+        </Button>
+        <ClockControl
+          clock={clock}
+          incrementClock={incrementClock}
+          decrementClock={decrementClock}
+        />
+      </div>
+
       <DisplayInstructionsSimulation instructions={instructions} />
 
       <Divider />

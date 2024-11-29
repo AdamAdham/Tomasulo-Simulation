@@ -12,38 +12,97 @@ import { CacheContext } from "../Common/Context/CacheContext";
 import { InstructionsContext } from "../Common/Context/InstructionsContext";
 import { ResourcesContext } from "../Common/Context/ResourcesContext";
 import { SimulationContext } from "../Common/Context/SimulationContext";
+import { IntegerRegistersContext } from "../Common/Context/IntegerRegistersContext";
+import { FloatingRegistersContext } from "../Common/Context/FloatingRegistersContext";
+import { initializeCache, initializeResources } from "../Common/Functions";
+import { MemoryContext } from "../Common/Context/MemoryContext";
 
 const Init = () => {
   const navigate = useNavigate();
-  const { initializeCache } = useContext(CacheContext);
+  // const { initializeCache } = useContext(CacheContext);
   const { instructions } = useContext(InstructionsContext);
-  const { cache } = useContext(CacheContext);
+  const { cacheSize, blockSize, cache, setCache } = useContext(CacheContext);
+  const { memory } = useContext(MemoryContext);
   const {
-    initializeResources,
+    // initializeResources,
+    loadBufferSize,
+    storeBufferSize,
+    addSubResSize,
+    mulDivResSize,
+    integerResSize,
     loadBuffer,
+    setLoadBuffer,
     storeBuffer,
+    setStoreBuffer,
     addSubRes,
+    setAddSubRes,
     mulDivRes,
+    setMulDivRes,
     integerRes,
+    setIntegerRes,
   } = useContext(ResourcesContext);
+  const { integerRegisters } = useContext(IntegerRegistersContext);
+
+  const { floatingRegisters } = useContext(FloatingRegistersContext);
   const { simulation, setSimulation } = useContext(SimulationContext);
 
   // const [instructions, setInstructions] = useState([]);
   const startSimulation = () => {
-    initializeCache();
+    const updatedCache = initializeCache(cacheSize, blockSize);
+    setCache(updatedCache);
 
-    initializeResources();
+    const updatedResources = initializeResources(
+      loadBufferSize,
+      storeBufferSize,
+      addSubResSize,
+      mulDivResSize,
+      integerResSize
+    );
+    console.log("updatedResources", updatedResources);
+
+    const loadBufferUpdated = updatedResources.loadBuffer;
+    const storeBufferUpdated = updatedResources.storeBuffer;
+    const addSubResUpdated = updatedResources.addSubRes;
+    const mulDivResUpdated = updatedResources.mulDivRes;
+    const integerResUpdated = updatedResources.integerRes;
+    setLoadBuffer(loadBufferUpdated);
+    setStoreBuffer(storeBufferUpdated);
+    setAddSubRes(addSubResUpdated);
+    setMulDivRes(mulDivResUpdated);
+    setIntegerRes(integerResUpdated);
 
     // Init simulation clock cycle 0
-    setSimulation({
-      instructions,
-      cache,
-      loadBuffer,
-      storeBuffer,
-      addSubRes,
-      mulDivRes,
-      integerRes,
-    });
+    console.log(updatedCache);
+
+    setSimulation([
+      {
+        instructions,
+        integerRegisters,
+        floatingRegisters,
+        cache: updatedCache,
+        memory,
+        loadBuffer: loadBufferUpdated,
+        storeBuffer: storeBufferUpdated,
+        addSubRes: addSubResUpdated,
+        mulDivRes: mulDivResUpdated,
+        integerRes: integerResUpdated,
+      },
+    ]);
+    localStorage.setItem(
+      "initialSimulation",
+      JSON.stringify({
+        instructions,
+        integerRegisters,
+        floatingRegisters,
+        cache: updatedCache,
+        memory,
+        loadBuffer: loadBufferUpdated,
+        storeBuffer: storeBufferUpdated,
+        addSubRes: addSubResUpdated,
+        mulDivRes: mulDivResUpdated,
+        integerRes: integerResUpdated,
+      })
+    );
     navigate("simulation");
   };
   return (

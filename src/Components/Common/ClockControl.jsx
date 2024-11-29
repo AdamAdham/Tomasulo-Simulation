@@ -17,8 +17,8 @@ const ClockControl = ({ clock, incrementClock, decrementClock }) => {
       <IconButton
         color="primary"
         style={{
-          height: "50px",
-          width: "50px",
+          height: "40px",
+          width: "40px",
           backgroundColor: "#192126",
         }}
         onClick={decrementClock}
@@ -33,7 +33,7 @@ const ClockControl = ({ clock, incrementClock, decrementClock }) => {
           margin: "0 10px",
           border: "solid 2px #90caf9",
           padding: "0 10px",
-          height: "80%",
+          height: "40%",
           borderRadius: "7px",
           backgroundColor: "#192126",
         }}
@@ -43,8 +43,8 @@ const ClockControl = ({ clock, incrementClock, decrementClock }) => {
       <IconButton
         color="primary"
         style={{
-          height: "50px",
-          width: "50px",
+          height: "40px",
+          width: "40px",
           backgroundColor: "#192126",
         }}
         onClick={incrementClock}

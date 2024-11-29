@@ -33,6 +33,7 @@ const RegistersInit = () => {
   const { floatingRegisters, setFloatingRegisters } = useContext(
     FloatingRegistersContext
   );
+  console.log(floatingRegisters);
 
   const [floatingRegister, setFloatingRegister] = useState("F0");
   const [floatingValue, setFloatingValue] = useState(0);
@@ -43,7 +44,10 @@ const RegistersInit = () => {
   const modifyFloatingRegister = () => {
     setFloatingRegisters((prev) => ({
       ...prev,
-      [floatingRegister]: { ...prev[floatingRegister], value: floatingValue },
+      [floatingRegister]: {
+        ...prev[floatingRegister],
+        value: parseFloat(floatingValue),
+      }, // why add here parseFloat? Because we allow the user to enter a number ending with '.' to continue there value, so if left ending with . and did not parseFloat will get added as string
     }));
   };
 
@@ -55,19 +59,25 @@ const RegistersInit = () => {
   };
 
   const handleRegisterValue = (value, type) => {
-    let temp = parseInt(value, 10); // Convert to integer
-    if (isNaN(temp)) {
-      temp = 0; // Default to 0 if the input is not a valid number
-    } else if (temp > 1.8446744e19) {
-      temp = 1.8446744e19;
-    }
-    if (type == "integer") {
+    let temp = value; // Keep the raw input for intermediate states
+
+    if (type === "integer") {
+      temp = parseInt(value, 10);
+      if (isNaN(temp)) {
+        temp = 0; // Default to 0 if the input is not a valid number
+      } else if (temp > 1.8446744e19) {
+        temp = 1.8446744e19;
+      }
       setIntegerValue(temp);
     } else {
-      setFloatingValue(temp);
+      // For floating-point, handle intermediate input
+      if (!isNaN(parseFloat(value)) || value.endsWith(".")) {
+        setFloatingValue(value); // Temporarily allow invalid intermediate values like "5."
+      } else if (value === "") {
+        setFloatingValue(""); // Allow empty input
+      }
     }
   };
-
   return (
     <div
       style={{
