@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect } from "react";
 import { Divider, Tabs } from "antd";
-import { Button } from "@mui/material";
+import { Button, IconButton } from "@mui/material";
+import { KeyboardArrowLeft } from "@mui/icons-material";
 
 import { CacheContext } from "../Common/Context/CacheContext";
 import { IntegerRegistersContext } from "../Common/Context/IntegerRegistersContext";
@@ -23,9 +24,12 @@ import DisplayMemory from "../Common/DisplayMemory";
 import DisplayCache from "../Common/DisplayCache";
 import DisplayLatencies from "../Common/DisplayLatencies";
 import DisplayIntegerStation from "../Common/DisplayIntegerStation";
-const history = new Array(500).fill(0);
+
+import { useNavigate } from "react-router-dom";
+let history = [];
 
 const Simulation = () => {
+  const navigate = useNavigate();
   const { instructions, setInstructions } = useContext(InstructionsContext);
   const { integerRegisters, setIntegerRegisters } = useContext(
     IntegerRegistersContext
@@ -33,8 +37,7 @@ const Simulation = () => {
   const { floatingRegisters, setFloatingRegisters } = useContext(
     FloatingRegistersContext
   );
-  const { clock, setClock, incrementClock, decrementClock, resetClock } =
-    useContext(ClockContext);
+  const { clock, setClock } = useContext(ClockContext);
   const { cache, setCache, cachePenalty } = useContext(CacheContext);
   const { simulation, setSimulation } = useContext(SimulationContext);
   const {
@@ -61,7 +64,6 @@ const Simulation = () => {
     latencyIntegerSub,
   } = useContext(InstructionLatencyContext);
   const { memory, setMemory } = useContext(MemoryContext);
-
   const [tabItems, setTabItems] = useState([
     {
       key: "1",
@@ -153,9 +155,9 @@ const Simulation = () => {
     setIntegerRes([...simulationInstance.integerRes]);
   };
   useEffect(() => {
-    if (simulation[clock]) {
+    if (history[clock]) {
       // Have already done it
-      setContext(simulation[clock]);
+      setContext(history[clock]);
     } else {
       // Has not been simulated
       // Generate new values
@@ -163,16 +165,16 @@ const Simulation = () => {
       // Get values of current cycle
 
       const nextSimulation = simulateNextClock(
-        instructions,
-        integerRegisters,
-        floatingRegisters,
-        cache,
-        memory,
-        loadBuffer,
-        storeBuffer,
-        addSubRes,
-        mulDivRes,
-        integerRes,
+        structuredClone(instructions),
+        structuredClone(integerRegisters),
+        structuredClone(floatingRegisters),
+        structuredClone(cache),
+        structuredClone(memory),
+        structuredClone(loadBuffer),
+        structuredClone(storeBuffer),
+        structuredClone(addSubRes),
+        structuredClone(mulDivRes),
+        structuredClone(integerRes),
 
         // Instruction Latencies
         latencyStore,
@@ -193,20 +195,20 @@ const Simulation = () => {
       // Set new values to be displayed
       if (!nextSimulation) return; // Error occured not sure TODO
       // Set new values so that when clk is the same again we just get the value directly with no simulation
-      setSimulation((prev) => {
-        if (!prev[clock]) {
-          prev = [...prev, nextSimulation];
-        } else {
-          prev[clock] = nextSimulation;
-        }
-        return prev;
-      });
+      setContext(nextSimulation);
+      history.push(nextSimulation);
+      // setSimulation((prev) => {
+      //   if (!prev[clock]) {
+      //     prev = [...prev, nextSimulation];
+      //   } else {
+      //     prev[clock] = nextSimulation;
+      //   }
+      //   return prev;
+      // });
     }
   }, [clock]);
 
   useEffect(() => {
-    console.log(simulation);
-
     if (simulation[clock]) {
       setContext(simulation[clock]);
     }
@@ -222,8 +224,8 @@ const Simulation = () => {
     );
 
     initialSimulation.instructions = initialInstructions;
-
-    setSimulation([initialSimulation]);
+    setContext(initialSimulation);
+    history = [initialSimulation];
   };
 
   return (
@@ -234,6 +236,22 @@ const Simulation = () => {
         borderTop: "1px solid transparent",
       }}
     >
+      <IconButton
+        color="#192126"
+        style={{
+          position: "absolute",
+          left: "50px",
+          top: "40px",
+          height: "40px",
+          width: "40px",
+          backgroundColor: "#171c1f",
+        }}
+        onClick={() => {
+          navigate("/");
+        }}
+      >
+        <KeyboardArrowLeft style={{ fontSize: "30px" }} />
+      </IconButton>
       <h1 style={{ marginTop: "30px", fontSize: "40px" }}>Simulation</h1>
       <Divider />
       <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -245,11 +263,7 @@ const Simulation = () => {
         >
           Reset
         </Button>
-        <ClockControl
-          clock={clock}
-          incrementClock={incrementClock}
-          decrementClock={decrementClock}
-        />
+        <ClockControl />
       </div>
       <DisplayLatencies />
       <DisplayInstructionsSimulation instructions={instructions} />
