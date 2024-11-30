@@ -71,6 +71,7 @@ const Init = () => {
     // Init simulation clock cycle 0
     setSimulation([
       {
+        instructionQueue: [],
         instructions,
         integerRegisters,
         floatingRegisters,

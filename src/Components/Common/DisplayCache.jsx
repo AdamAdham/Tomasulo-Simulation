@@ -51,10 +51,10 @@ const columns = [
 const DisplayCache = ({ cache }) => {
   const [cacheTable, setCacheTable] = useState(cache);
   useEffect(() => {
-    const tableData = cache.map((block, index) => ({
+    const tableData = cache?.map((block, index) => ({
       key: index,
       index,
-      block: block.map((value, blockOffset) => ({ blockOffset, value })),
+      block: block?.map((value, blockOffset) => ({ blockOffset, value })),
     }));
     setCacheTable(tableData);
   }, [cache]);

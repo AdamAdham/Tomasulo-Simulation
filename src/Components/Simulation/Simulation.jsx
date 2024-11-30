@@ -264,7 +264,7 @@ const Simulation = () => {
     }
   }, [simulation]);
 
-  const resetSimulation = () => {
+  const loadInstructions = () => {
     setClock(0);
     const initialSimulation = JSON.parse(
       localStorage.getItem("initialSimulation")
@@ -277,6 +277,20 @@ const Simulation = () => {
     historyInstructions = [initialSimulation];
     setInstructions(initialInstructions);
   };
+
+  const resetSimulation = () => {
+    setClock(0);
+    const initialSimulation = JSON.parse(
+      localStorage.getItem("initialSimulation")
+    );
+    initialSimulation.instructionQueue = [];
+    setContext(initialSimulation);
+    historyInstructions = [initialSimulation];
+  };
+
+  useEffect(() => {
+    resetSimulation();
+  }, []);
 
   return (
     <div
@@ -305,14 +319,25 @@ const Simulation = () => {
       <h1 style={{ marginTop: "30px", fontSize: "40px" }}>Simulation</h1>
       <Divider />
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <Button
-          variant="outlined"
-          color="error"
-          style={{ margin: "40px", fontSize: "15px", borderRadius: "10px" }}
-          onClick={resetSimulation}
-        >
-          Reset
-        </Button>
+        <div style={{ display: "flex" }}>
+          <Button
+            variant="outlined"
+            color="error"
+            style={{ margin: "40px", fontSize: "15px", borderRadius: "10px" }}
+            onClick={resetSimulation}
+          >
+            Reset
+          </Button>
+
+          <Button
+            variant="outlined"
+            style={{ margin: "40px", fontSize: "15px", borderRadius: "10px" }}
+            onClick={loadInstructions}
+          >
+            Load
+          </Button>
+        </div>
+
         <ClockControl />
       </div>
       <DisplayLatencies />
