@@ -17,13 +17,19 @@ import DisplayStations from "../Common/DisplayStations";
 import DisplayStation from "../Common/DisplayStation";
 
 import { ResourcesContext } from "../Common/Context/ResourcesContext";
-import { simulateNextClock, simulateNextClockQueue } from "../Common/Functions";
+import {
+  simulateNextClock,
+  simulateNextClockQueue,
+  initializeCache,
+} from "../Common/Functions";
 import { MemoryContext } from "../Common/Context/MemoryContext";
 import { InstructionLatencyContext } from "../Common/Context/InstructionLatencyContext";
 import DisplayMemory from "../Common/DisplayMemory";
 import DisplayCache from "../Common/DisplayCache";
 import DisplayLatencies from "../Common/DisplayLatencies";
 import DisplayIntegerStation from "../Common/DisplayIntegerStation";
+
+import { memorySize } from "../../Constants/Constants";
 
 import { useNavigate } from "react-router-dom";
 let historyInstructions = [];
@@ -280,16 +286,52 @@ const Simulation = () => {
 
   const resetSimulation = () => {
     setClock(0);
+    setInstructions([]);
+    let temp = {};
+    // for (let i = 0; i < 30; i++) {
+    //   temp[`R${i}`] = { value: 0, Qi: 0 };
+    // }
+    for (let i = 0; i < 30; i++) {
+      temp[`R${i}`] = { value: i, Qi: 0 };
+    }
+    setIntegerRegisters(temp);
+
+    let floatingTemp = {};
+    // for (let i = 0; i < 30; i++) {
+    //   temp[`F${i}`] = { value: 0, Qi: 0 };
+    // }
+    for (let i = 0; i < 30; i++) {
+      floatingTemp[`F${i}`] = { value: i, Qi: 0 };
+    }
+    setFloatingRegisters(floatingTemp);
+
+    const cacheInit = initializeCache();
+    setCache(cacheInit);
+
+    setMemory(Array(memorySize).fill(0));
     const initialSimulation = JSON.parse(
       localStorage.getItem("initialSimulation")
     );
+
+    setLoadBuffer([]);
+    setStoreBuffer([]);
+    setAddSubRes([]);
+    setMulDivRes([]);
+    setIntegerRes([]);
+
     initialSimulation.instructionQueue = [];
     setContext(initialSimulation);
     historyInstructions = [initialSimulation];
   };
 
   useEffect(() => {
-    resetSimulation();
+    setClock(0);
+    const initialSimulation = JSON.parse(
+      localStorage.getItem("initialSimulation")
+    );
+    initialSimulation.instructionQueue = [];
+    setContext(initialSimulation);
+    historyInstructions = [initialSimulation];
   }, []);
 
   return (
@@ -320,7 +362,7 @@ const Simulation = () => {
       <Divider />
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div style={{ display: "flex" }}>
-          <Button
+          {/* <Button
             variant="outlined"
             color="error"
             style={{ margin: "40px", fontSize: "15px", borderRadius: "10px" }}
@@ -335,7 +377,7 @@ const Simulation = () => {
             onClick={loadInstructions}
           >
             Load
-          </Button>
+          </Button> */}
         </div>
 
         <ClockControl />
