@@ -17,7 +17,7 @@ import DisplayStations from "../Common/DisplayStations";
 import DisplayStation from "../Common/DisplayStation";
 
 import { ResourcesContext } from "../Common/Context/ResourcesContext";
-import { simulateNextClock } from "../Common/Functions";
+import { simulateNextClock, simulateNextClockQueue } from "../Common/Functions";
 import { MemoryContext } from "../Common/Context/MemoryContext";
 import { InstructionLatencyContext } from "../Common/Context/InstructionLatencyContext";
 import DisplayMemory from "../Common/DisplayMemory";
@@ -26,7 +26,8 @@ import DisplayLatencies from "../Common/DisplayLatencies";
 import DisplayIntegerStation from "../Common/DisplayIntegerStation";
 
 import { useNavigate } from "react-router-dom";
-let history = [];
+let historyInstructions = [];
+let historyQueue = [];
 
 const Simulation = () => {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ const Simulation = () => {
   const { clock, setClock } = useContext(ClockContext);
   const { cache, setCache, cachePenalty } = useContext(CacheContext);
   const { simulation, setSimulation } = useContext(SimulationContext);
+  const [instructionQueue, setInstructionQueue] = useState([]);
   const {
     loadBuffer,
     setLoadBuffer,
@@ -144,7 +146,7 @@ const Simulation = () => {
   }, [integerRegisters]);
 
   const setContext = (simulationInstance) => {
-    setInstructions([...simulationInstance.instructions]);
+    setInstructionQueue([...simulationInstance.instructionQueue]);
     setIntegerRegisters({ ...simulationInstance.integerRegisters });
     setFloatingRegisters({ ...simulationInstance.floatingRegisters });
     setCache([...simulationInstance.cache]);
@@ -156,16 +158,55 @@ const Simulation = () => {
     setIntegerRes([...simulationInstance.integerRes]);
   };
   useEffect(() => {
-    if (history[clock]) {
+    if (historyInstructions[clock]) {
+      setInstructions(historyInstructions[clock]?.instructions);
+    }
+    if (historyQueue[clock - 1]) {
       // Have already done it
-      setContext(history[clock]);
+      setContext(historyQueue[clock - 1]);
     } else {
       // Has not been simulated
       // Generate new values
       // Give values of previous clock cycle
       // Get values of current cycle
 
-      const nextSimulation = simulateNextClock(
+      // const nextSimulation = null;
+      let nextSimulation = null;
+      console.log(historyInstructions);
+
+      if (historyInstructions[clock - 1]) {
+        nextSimulation = simulateNextClock(
+          structuredClone(historyInstructions[clock - 1].instructions),
+          structuredClone(historyInstructions[clock - 1].integerRegisters),
+          structuredClone(historyInstructions[clock - 1].floatingRegisters),
+          structuredClone(historyInstructions[clock - 1].cache),
+          structuredClone(historyInstructions[clock - 1].memory),
+          structuredClone(historyInstructions[clock - 1].loadBuffer),
+          structuredClone(historyInstructions[clock - 1].storeBuffer),
+          structuredClone(historyInstructions[clock - 1].addSubRes),
+          structuredClone(historyInstructions[clock - 1].mulDivRes),
+          structuredClone(historyInstructions[clock - 1].integerRes),
+
+          // Instruction Latencies
+          latencyStore,
+          latencyLoad,
+          latencyAdd,
+          latencySub,
+          latencyMultiply,
+          latencyDivide,
+          latencyIntegerAdd,
+          latencyIntegerSub,
+          latencyBranch,
+
+          clock,
+
+          // Resource Latencies
+          cachePenalty
+        );
+      }
+
+      const nextSimulationQueue = simulateNextClockQueue(
+        structuredClone(instructionQueue),
         structuredClone(instructions),
         structuredClone(integerRegisters),
         structuredClone(floatingRegisters),
@@ -197,8 +238,15 @@ const Simulation = () => {
       // Set new values to be displayed
       if (!nextSimulation) return; // Error occured not sure TODO
       // Set new values so that when clk is the same again we just get the value directly with no simulation
-      setContext(nextSimulation);
-      history.push(nextSimulation);
+      setInstructionQueue(nextSimulationQueue.instructions);
+      setContext(nextSimulationQueue);
+      historyQueue.push(nextSimulationQueue);
+      console.log(historyQueue);
+
+      setInstructions(nextSimulation.instructions);
+      historyInstructions.push(nextSimulation);
+      console.log(historyInstructions);
+
       // setSimulation((prev) => {
       //   if (!prev[clock]) {
       //     prev = [...prev, nextSimulation];
@@ -224,10 +272,10 @@ const Simulation = () => {
     const initialInstructions = JSON.parse(
       localStorage.getItem("initialInstructions")
     );
-
-    initialSimulation.instructions = initialInstructions;
+    initialSimulation.instructionQueue = [];
     setContext(initialSimulation);
-    history = [initialSimulation];
+    historyInstructions = [initialSimulation];
+    setInstructions(initialInstructions);
   };
 
   return (
@@ -268,6 +316,7 @@ const Simulation = () => {
         <ClockControl />
       </div>
       <DisplayLatencies />
+      <DisplayInstructionsSimulation instructions={instructionQueue} />
       <DisplayInstructionsSimulation instructions={instructions} />
 
       <Divider />

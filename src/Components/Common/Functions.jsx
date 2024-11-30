@@ -289,14 +289,22 @@ const getCurrentInstruction = (instructions) => {
     branchOpcodes.includes(previousInstruction?.opcode)
   ) {
     // There is a previous instruction and the previous instruction is a branch
+    console.log("previousInstruction", previousInstruction);
 
     if (!previousInstruction.writeResult) return null; // If did not write result stall since no branch prediction
     // If here then it has written the result
     const label = instructions[mostRecentIssueIndex].toLabel;
+    console.log(
+      "instructions[mostRecentIssueIndex].toLabel",
+      instructions[mostRecentIssueIndex].toLabel
+    );
+
     instructions.forEach((instr, index) => {
       if (instr.label === label) {
         currentInstructionIndex = index;
         currentInstruction = instr;
+        console.log("found label");
+
         return; // Exit forEach
       }
     });
@@ -481,7 +489,7 @@ const cleanInstruction = (instruction) => {
     R3: instruction.R3,
     immediate: instruction.immediate,
     effective: instruction.effective,
-    destinationLabel: instruction.destinationLabel,
+    toLabel: instruction.toLabel,
   };
 };
 
@@ -526,6 +534,8 @@ export const issue = (
   const rowTag = resourceRes.rowTag;
 
   // Update Register file with row tag and get row details
+  console.log("currentInstructionIndex issue", currentInstructionIndex);
+
   const updateRegsValuesGetRowRes = updateRegsValuesGetRow(
     instruction,
     currentInstructionIndex,
@@ -569,6 +579,96 @@ export const issue = (
     issue: clock,
     rowTag,
   };
+};
+export const issueQueue = (
+  instructions,
+  instructionsInitial,
+  integerRegisters,
+  floatingRegisters,
+  loadBuffer,
+  storeBuffer,
+  addSubRes,
+  mulDivRes,
+  integerRes,
+  clock
+) => {
+  const currentInstructionIndex = getCurrentInstruction(instructionsInitial);
+
+  if (currentInstructionIndex != 0 && !currentInstructionIndex) {
+    console.log(
+      "Either Stall(branch) or no instructions left then we dont issue an instruction"
+    );
+    return null;
+  } // Either Stall(branch) or no instructions left then we dont issue an instruction
+  // There is a current instruction
+
+  const instruction = instructionsInitial[currentInstructionIndex];
+  // Check for structural hazards if not:
+  // return resource and the index in the resource to put the instruction and its tag
+  const resourceRes = selectResource(
+    instruction,
+    loadBuffer,
+    storeBuffer,
+    addSubRes,
+    mulDivRes,
+    integerRes
+  );
+
+  if (!resourceRes) {
+    console.log("Searching for resources returned null");
+    return null; // Stall or no intructions since no resource avaliable
+  }
+  const resourceName = resourceRes.resourceName;
+  const rowIndex = resourceRes.resourceIndex;
+  const rowTag = resourceRes.rowTag;
+
+  // Update Register file with row tag and get row details
+
+  const updateRegsValuesGetRowRes = updateRegsValuesGetRow(
+    instruction,
+    instructions.length, // Instruction index is the length (not minus because we havent appended yet), since it is the last instruction in the queue
+    integerRegisters,
+    floatingRegisters,
+    rowTag
+  );
+  if (!updateRegsValuesGetRowRes) {
+    console.log("updateRegsValuesGetRowRes is null");
+    return null;
+  } // DK why
+  const rowDetails = updateRegsValuesGetRowRes.row;
+  integerRegisters = updateRegsValuesGetRowRes.integerRegisters;
+  floatingRegisters = updateRegsValuesGetRowRes.floatingRegisters;
+
+  // Update buffer/reservation station
+  switch (resourceName) {
+    case "loadBuffer":
+      loadBuffer[rowIndex] = rowDetails;
+      break;
+    case "storeBuffer":
+      storeBuffer[rowIndex] = rowDetails;
+      break;
+    case "addSubRes":
+      addSubRes[rowIndex] = rowDetails;
+      break;
+    case "mulDivRes":
+      mulDivRes[rowIndex] = rowDetails;
+      break;
+    case "integerRes":
+      integerRes[rowIndex] = rowDetails;
+      break;
+    default:
+      console.error(`Invalid resource name: ${resourceName}`);
+  }
+
+  // If has come to this point then the instruction has successfully issued so just update the instruction to issue at the current clock cycle
+  // Why reasign SOME values, because if this instruction has already gone through its
+  console.log("currentInstructionIndex", currentInstructionIndex);
+
+  instructions.push({
+    ...cleanInstruction(instructionsInitial[currentInstructionIndex]),
+    issue: clock,
+    rowTag,
+  });
 
   // Return updated values of register file, instructions and buffers/Reservation stations
   return {
@@ -583,6 +683,7 @@ export const issue = (
   };
 };
 
+// TODO A in buffer/res
 const startExecStation = (instructions, clock, station) => {
   station?.forEach((row) => {
     if (row.busy == 1 && !instructions[row.instructionIndex].execStart) {
@@ -826,10 +927,6 @@ const handleExecute = (
     "BNE"
   );
 
-  // instructions = instructions.map((instruction) => {
-  //   console.log(instruction);
-  // });
-
   return instructions;
 };
 
@@ -934,7 +1031,6 @@ const refreshRegisterFileWrite = (registerFile, tag, value) => {
   });
   return registerFile;
 };
-
 export const simulateNextClock = (
   instructions,
   integerRegisters,
@@ -1062,6 +1158,148 @@ export const simulateNextClock = (
   // wr
   return {
     instructions: instructionsTemp,
+    integerRegisters: integerRegistersTemp,
+    floatingRegisters: floatingRegistersTemp,
+    cache: cacheTemp,
+    memory: memoryTemp,
+    loadBuffer: loadBufferTemp,
+    storeBuffer: storeBufferTemp,
+    addSubRes: addSubResTemp,
+    mulDivRes: mulDivResTemp,
+    integerRes: integerResTemp,
+  }; // Just initial to return all vars
+};
+
+export const simulateNextClockQueue = (
+  instructions,
+  instructionsInitial,
+  integerRegisters,
+  floatingRegisters,
+  cache,
+  memory,
+  loadBuffer,
+  storeBuffer,
+  addSubRes,
+  mulDivRes,
+  integerRes,
+
+  // Instruction Latencies
+  latencyStore,
+  latencyLoad,
+  latencyAdd,
+  latencySub,
+  latencyMultiply,
+  latencyDivide,
+  latencyIntegerAdd,
+  latencyIntegerSub,
+  latencyBranch,
+
+  clock,
+
+  // Resource Latencies
+  cachePenalty
+) => {
+  let instructionsTemp = instructions;
+  let instructionsInitialTemp = instructionsInitial;
+  let integerRegistersTemp = integerRegisters;
+  let floatingRegistersTemp = floatingRegisters;
+  let cacheTemp = cache;
+  let memoryTemp = memory;
+  let loadBufferTemp = loadBuffer;
+  let storeBufferTemp = storeBuffer;
+  let addSubResTemp = addSubRes;
+  let mulDivResTemp = mulDivRes;
+  let integerResTemp = integerRes;
+  // console.dir(JSON.stringify(instructions, null, 2));
+  // console.dir(JSON.stringify(integerRegisters, null, 2));
+  // console.dir(JSON.stringify(floatingRegisters, null, 2));
+  // console.dir(JSON.stringify(loadBuffer, null, 2));
+  // console.dir(JSON.stringify(storeBuffer, null, 2));
+  // console.dir(JSON.stringify(addSubRes, null, 2));
+  // console.dir(JSON.stringify(mulDivRes, null, 2));
+  // console.dir(JSON.stringify(integerRes, null, 2));
+
+  if (instructionsTemp.length > 0) {
+    instructionsTemp = handleExecute(
+      instructionsTemp,
+      clock,
+      // Resources
+      loadBufferTemp,
+      storeBufferTemp,
+      addSubResTemp,
+      mulDivResTemp,
+      integerResTemp,
+      // Instruction Latencies
+      latencyStore,
+      latencyLoad,
+      latencyAdd,
+      latencySub,
+      latencyMultiply,
+      latencyDivide,
+      latencyIntegerAdd,
+      latencyIntegerSub,
+      latencyBranch,
+      // Resource Latencies
+      cachePenalty
+    );
+  }
+
+  // ISSUE
+  const afterIssue = issueQueue(
+    instructionsTemp,
+    instructionsInitialTemp,
+    integerRegistersTemp,
+    floatingRegistersTemp,
+    loadBufferTemp,
+    storeBufferTemp,
+    addSubResTemp,
+    mulDivResTemp,
+    integerResTemp,
+    clock // current clock
+  );
+  if (!afterIssue) {
+    console.log("Issue returned null");
+  } else {
+    ({
+      instructions: instructionsTemp,
+      integerRegisters: integerRegistersTemp,
+      floatingRegisters: floatingRegistersTemp,
+      loadBuffer: loadBufferTemp,
+      storeBuffer: storeBufferTemp,
+      addSubRes: addSubResTemp,
+      mulDivRes: mulDivResTemp,
+      integerRes: integerResTemp,
+    } = afterIssue);
+  }
+  // Done it after execute because if not, instruction can start executing the same time
+  // Done it after issue because not to issue a waiting instruction in same cycle as previous instruction making resource full writes the result
+  // the provider instruction has written result on bus
+  ({
+    instructions: instructionsTemp,
+    integerRegisters: integerRegistersTemp,
+    floatingRegisters: floatingRegistersTemp,
+    loadBuffer: loadBufferTemp,
+    storeBuffer: storeBufferTemp,
+    addSubRes: addSubResTemp,
+    mulDivRes: mulDivResTemp,
+    integerRes: integerResTemp,
+  } = writeResult(
+    instructionsTemp,
+    integerRegistersTemp,
+    floatingRegistersTemp,
+    cacheTemp,
+    memoryTemp,
+    loadBufferTemp,
+    storeBufferTemp,
+    addSubResTemp,
+    mulDivResTemp,
+    integerResTemp,
+    clock
+  ));
+  // exec
+  // wr
+  return {
+    instructionQueue: instructionsTemp,
     integerRegisters: integerRegistersTemp,
     floatingRegisters: floatingRegistersTemp,
     cache: cacheTemp,

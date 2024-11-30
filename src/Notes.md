@@ -84,6 +84,7 @@ cache hit and miss etc, hayetzawed 3al execute wala hangeeb if(hit)min(exec,hit)
 
 ASK:
 Store affects memory in write Result?
+latency if 1 execStart = 5 and execEnd = 6, because it is defined as delay?
 
 # Flow
 

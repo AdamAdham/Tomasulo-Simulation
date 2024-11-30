@@ -86,6 +86,7 @@ const Init = () => {
     localStorage.setItem(
       "initialSimulation",
       JSON.stringify({
+        instructionQueue: [],
         instructions,
         integerRegisters,
         floatingRegisters,
