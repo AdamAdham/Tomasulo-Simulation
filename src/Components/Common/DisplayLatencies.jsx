@@ -12,6 +12,7 @@ const DisplayLatencies = () => {
     latencyDivide,
     latencyIntegerAdd,
     latencyIntegerSub,
+    latencyBranch,
   } = useContext(InstructionLatencyContext);
   return (
     <div style={{ marginBottom: "30px", marginTop: "-30px" }}>
@@ -112,6 +113,19 @@ const DisplayLatencies = () => {
         label="Int Add Latency"
         variant="outlined"
         value={latencyIntegerAdd}
+        slotProps={{
+          input: {
+            readOnly: true,
+          },
+        }}
+        style={{ width: "120px", marginLeft: "20px" }}
+      />
+
+      <TextField
+        id="latency-branch"
+        label="Branch Latency"
+        variant="outlined"
+        value={latencyBranch}
         slotProps={{
           input: {
             readOnly: true,

@@ -62,6 +62,7 @@ const Simulation = () => {
     latencyDivide,
     latencyIntegerAdd,
     latencyIntegerSub,
+    latencyBranch,
   } = useContext(InstructionLatencyContext);
   const { memory, setMemory } = useContext(MemoryContext);
   const [tabItems, setTabItems] = useState([
@@ -185,6 +186,7 @@ const Simulation = () => {
         latencyDivide,
         latencyIntegerAdd,
         latencyIntegerSub,
+        latencyBranch,
 
         clock,
 

@@ -472,6 +472,19 @@ export const addInstructionToResource = (
   const reg3Type = reg3[0];
 };
 
+const cleanInstruction = (instruction) => {
+  return {
+    label: instruction.label,
+    opcode: instruction.opcode,
+    R1: instruction.R1,
+    R2: instruction.R2,
+    R3: instruction.R3,
+    immediate: instruction.immediate,
+    effective: instruction.effective,
+    destinationLabel: instruction.destinationLabel,
+  };
+};
+
 export const issue = (
   instructions,
   integerRegisters,
@@ -493,7 +506,6 @@ export const issue = (
   } // Either Stall(branch) or no instructions left then we dont issue an instruction
   // There is a current instruction
   const instruction = instructions[currentInstructionIndex];
-
   // Check for structural hazards if not:
   // return resource and the index in the resource to put the instruction and its tag
   const resourceRes = selectResource(
@@ -551,8 +563,9 @@ export const issue = (
   }
 
   // If has come to this point then the instruction has successfully issued so just update the instruction to issue at the current clock cycle
+  // Why reasign SOME values, because if this instruction has already gone through its
   instructions[currentInstructionIndex] = {
-    ...instructions[currentInstructionIndex],
+    ...cleanInstruction(instructions[currentInstructionIndex]),
     issue: clock,
     rowTag,
   };
@@ -642,7 +655,12 @@ const computeValues = (row, opcode) => {
         result = 0;
       }
       break;
-
+    case "BNE":
+      result = VjDouble != VkDouble;
+      break;
+    case "BEQ":
+      result = VjDouble == VkDouble;
+      break;
     case "L":
       // TODO
       break;
@@ -657,35 +675,27 @@ const computeValues = (row, opcode) => {
 
 const endExecStation = (instructions, clock, station, latency, opcodePart) => {
   station?.forEach((row) => {
-    if (row.busy == 1) {
-      console.log("row.instructionIndex", row.instructionIndex);
-      console.log("execEnd", instructions[row.instructionIndex]?.execEnd);
-    }
-
     if (
       row.busy == 1 &&
       instructions[row.instructionIndex].execStart &&
       row.opcode.includes(opcodePart) &&
       !instructions[row.instructionIndex].execEnd
     ) {
-      console.log("entered");
-
       // The row is actually occupied &
       // started executing &&
       // opcode contains the snippet given
       // And did not already set execEnd
       const clockDifference =
         clock - instructions[row.instructionIndex].execStart;
-
       if (clockDifference == latency) {
         // Execute
         const value = computeValues(
           row,
           instructions[row.instructionIndex].opcode
         );
-
         instructions[row.instructionIndex].execEnd = clock;
-        if (value) instructions[row.instructionIndex].writeValue = value;
+        if (value || opcodePart == "BEQ" || opcodePart == "BNE")
+          instructions[row.instructionIndex].writeValue = value;
       }
     }
   });
@@ -713,10 +723,35 @@ const handleExecute = (
   latencyDivide,
   latencyIntegerAdd,
   latencyIntegerSub,
+  latencyBranch,
 
   // Resource Latencies
   cachePenalty
 ) => {
+  // EXEC Start
+  // Loop through all resources check if any of them can start
+  instructions = startExecStation(
+    instructions,
+    clock,
+    loadBuffer,
+    cachePenalty,
+    cachePenalty
+  );
+  instructions = startExecStation(
+    instructions,
+    clock,
+    storeBuffer,
+    cachePenalty
+  );
+  instructions = startExecStation(instructions, clock, addSubRes, cachePenalty);
+  instructions = startExecStation(instructions, clock, mulDivRes, cachePenalty);
+  instructions = startExecStation(
+    instructions,
+    clock,
+    integerRes,
+    cachePenalty
+  );
+
   // EXEC End
   instructions = endExecStation(
     instructions,
@@ -775,28 +810,20 @@ const handleExecute = (
     "SUB"
   );
 
-  // EXEC Start
-  // Loop through all resources check if any of them can start
-  instructions = startExecStation(
-    instructions,
-    clock,
-    loadBuffer,
-    cachePenalty,
-    cachePenalty
-  );
-  instructions = startExecStation(
-    instructions,
-    clock,
-    storeBuffer,
-    cachePenalty
-  );
-  instructions = startExecStation(instructions, clock, addSubRes, cachePenalty);
-  instructions = startExecStation(instructions, clock, mulDivRes, cachePenalty);
-  instructions = startExecStation(
+  instructions = endExecStation(
     instructions,
     clock,
     integerRes,
-    cachePenalty
+    latencyBranch,
+    "BEQ"
+  );
+
+  instructions = endExecStation(
+    instructions,
+    clock,
+    integerRes,
+    latencyBranch,
+    "BNE"
   );
 
   // instructions = instructions.map((instruction) => {
@@ -822,7 +849,7 @@ const writeResult = (
   let writtenToBus = false;
   instructions = instructions?.map((instruction) => {
     if (
-      instruction.writeValue &&
+      instruction.execEnd &&
       !writtenToBus &&
       !instruction.writeResult &&
       instruction.execEnd != clock
@@ -873,6 +900,7 @@ const refreshResBufferWrite = (station, tag, value) => {
     if (row.tag == tag) {
       // Reset row
       row = {
+        tag,
         busy: 0,
         opcode: null,
         Vj: null,
@@ -928,6 +956,7 @@ export const simulateNextClock = (
   latencyDivide,
   latencyIntegerAdd,
   latencyIntegerSub,
+  latencyBranch,
 
   clock,
 
@@ -972,34 +1001,10 @@ export const simulateNextClock = (
     latencyDivide,
     latencyIntegerAdd,
     latencyIntegerSub,
+    latencyBranch,
     // Resource Latencies
     cachePenalty
   );
-
-  // Done it after execute because if not, instruction can start executing the same time
-  // the provider instruction has written result on bus
-  ({
-    instructions: instructionsTemp,
-    integerRegisters: integerRegistersTemp,
-    floatingRegisters: floatingRegistersTemp,
-    loadBuffer: loadBufferTemp,
-    storeBuffer: storeBufferTemp,
-    addSubRes: addSubResTemp,
-    mulDivRes: mulDivResTemp,
-    integerRes: integerResTemp,
-  } = writeResult(
-    instructionsTemp,
-    integerRegistersTemp,
-    floatingRegistersTemp,
-    cacheTemp,
-    memoryTemp,
-    loadBufferTemp,
-    storeBufferTemp,
-    addSubResTemp,
-    mulDivResTemp,
-    integerResTemp,
-    clock
-  ));
 
   // ISSUE
   const afterIssue = issue(
@@ -1028,19 +1033,43 @@ export const simulateNextClock = (
     } = afterIssue);
   }
 
+  // Done it after execute because if not, instruction can start executing the same time
+  // Done it after issue because not to issue a waiting instruction in same cycle as previous instruction making resource full writes the result
+  // the provider instruction has written result on bus
+  ({
+    instructions: instructionsTemp,
+    integerRegisters: integerRegistersTemp,
+    floatingRegisters: floatingRegistersTemp,
+    loadBuffer: loadBufferTemp,
+    storeBuffer: storeBufferTemp,
+    addSubRes: addSubResTemp,
+    mulDivRes: mulDivResTemp,
+    integerRes: integerResTemp,
+  } = writeResult(
+    instructionsTemp,
+    integerRegistersTemp,
+    floatingRegistersTemp,
+    cacheTemp,
+    memoryTemp,
+    loadBufferTemp,
+    storeBufferTemp,
+    addSubResTemp,
+    mulDivResTemp,
+    integerResTemp,
+    clock
+  ));
   // exec
   // wr
   return {
     instructions: instructionsTemp,
-    integerRegisters: integerRegisters,
-    floatingRegisters: floatingRegisters,
-    cache: cache,
-    memory: memory,
-    loadBuffer: loadBuffer,
-    storeBuffer: storeBuffer,
-    addSubRes: addSubRes,
-    mulDivRes: mulDivRes,
-    integerRes: integerRes,
-    ...afterIssue,
+    integerRegisters: integerRegistersTemp,
+    floatingRegisters: floatingRegistersTemp,
+    cache: cacheTemp,
+    memory: memoryTemp,
+    loadBuffer: loadBufferTemp,
+    storeBuffer: storeBufferTemp,
+    addSubRes: addSubResTemp,
+    mulDivRes: mulDivResTemp,
+    integerRes: integerResTemp,
   }; // Just initial to return all vars
 };

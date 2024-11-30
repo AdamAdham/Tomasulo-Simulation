@@ -37,6 +37,8 @@ const InitStatistics = () => {
     setLatencyIntegerAdd,
     latencyIntegerSub,
     setLatencyIntegerSub,
+    latencyBranch,
+    setLatencyBranch,
   } = useContext(InstructionLatencyContext);
 
   const {
@@ -217,6 +219,17 @@ const InitStatistics = () => {
           value={latencyIntegerAdd}
           onChange={(e) =>
             handleGreaterZeroChange(e.target.value, setLatencyIntegerAdd)
+          }
+          style={{ width: "120px", marginLeft: "20px" }}
+        />
+
+        <TextField
+          id="latency-integer-add"
+          label="Branch Latency"
+          variant="outlined"
+          value={latencyBranch}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setLatencyBranch)
           }
           style={{ width: "120px", marginLeft: "20px" }}
         />
