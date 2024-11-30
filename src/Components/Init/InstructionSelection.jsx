@@ -22,6 +22,7 @@ import Alert from "@mui/material/Alert";
 import Collapse from "@mui/material/Collapse";
 import Button from "@mui/material/Button";
 import CloseIcon from "@mui/icons-material/Close";
+import SaveIcon from "@mui/icons-material/Save";
 import AlertTitle from "@mui/material/AlertTitle";
 import { InstructionsContext } from "../Common/Context/InstructionsContext";
 import {
@@ -192,6 +193,9 @@ const InstructionSelection = () => {
     }
   };
 
+  const saveInstructionReset = () => {
+    localStorage.setItem("initialInstructions", JSON.stringify(instructions));
+  };
   return (
     <div>
       <h1
@@ -386,6 +390,20 @@ const InstructionSelection = () => {
           onClick={addInstruction}
         >
           <AddIcon style={{ fontSize: "30px" }} />
+        </IconButton>
+
+        <IconButton
+          color="primary"
+          style={{
+            height: "50px",
+            width: "50px",
+            position: "absolute",
+            left: "100px",
+            backgroundColor: "#192126",
+          }}
+          onClick={saveInstructionReset}
+        >
+          <SaveIcon style={{ fontSize: "30px" }} />
         </IconButton>
       </div>
       <div>

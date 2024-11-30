@@ -46,7 +46,8 @@ export const initializeCache = (cacheSize, blockSize) => {
   let sets = cacheSize / blockSize;
   let cacheTemp = [];
   let block = [];
-  for (let i = 0; i < blockSize / 8; i++) {
+  // TODO REMOVE /8 because the block size is number of cells not the bits
+  for (let i = 0; i < blockSize; i++) {
     // create block of size BlockSize/8
     block.push(0);
   }
@@ -108,6 +109,8 @@ export const initializeResources = (
 };
 
 // SIMULATION
+
+// ISSUE FUNCTIONS
 /**
  * Updates the values of the reservation station buffer or registers based on the provided instruction
  * and returns the updated state and buffer entry.
@@ -183,6 +186,7 @@ export const initializeResources = (
  */
 const updateRegsValuesGetRow = (
   instruction,
+  instructionIndex,
   integerRegisters,
   floatingRegisters,
   rowTag
@@ -198,7 +202,16 @@ const updateRegsValuesGetRow = (
   let reg3Type = null;
   let register3Obj = null;
 
-  let row = { tag: rowTag, busy: 1, opcode: instruction.opcode }; // Resource row (instr in buffer or reservation station)
+  const immediate = instruction.immediate;
+
+  let row = {
+    tag: rowTag,
+    busy: 1,
+    opcode: instruction.opcode,
+    instructionIndex, // Instruction index to change in the instructions table
+    Qj: 0,
+    Qk: 0,
+  }; // Resource row (instr in buffer or reservation station)
 
   if (reg2) {
     reg2Type = reg2[0];
@@ -228,10 +241,12 @@ const updateRegsValuesGetRow = (
 
     // Update instuction according to registers
     if (register3Obj && register3Obj.Qi != 0) {
-      row = { ...row, Qk: register3Obj.Qj };
+      row = { ...row, Qk: register3Obj.Qi };
     } else {
       row = { ...row, Vk: register3Obj.value };
     }
+  } else if (immediate) {
+    row = { ...row, immediate };
   }
 
   // Update register file to listen to certain tag (after the getting because not use their in Q)
@@ -253,7 +268,8 @@ const getCurrentInstruction = (instructions) => {
   // Loop through instructions to check the last issued one
   let mostRecentIssue = -1;
   let mostRecentIssueIndex = -1;
-  instructions.forEach((instr, index) => {
+
+  instructions?.forEach((instr, index) => {
     if (instr.issue > mostRecentIssue) {
       mostRecentIssue = instr.issue;
       mostRecentIssueIndex = index;
@@ -434,11 +450,32 @@ const selectResource = (
   return { resourceName, resourceIndex, rowTag };
 };
 
+export const addInstructionToResource = (
+  instruction,
+  integerRegisters,
+  floationRegisters,
+  resource
+) => {
+  let freeIndex = -1;
+  resource.forEach((row, index) => {
+    if (row.busy == 0) {
+      // Found a vacant slot
+      freeIndex = index;
+    }
+  });
+  if (freeIndex == -1) return null; // Stall
+
+  // There was a free row in the resource so we proceed
+  const reg2 = instruction.R2;
+  const reg2Type = reg2[0];
+  const reg3 = instruction.R3;
+  const reg3Type = reg3[0];
+};
+
 export const issue = (
   instructions,
   integerRegisters,
   floatingRegisters,
-  cache,
   loadBuffer,
   storeBuffer,
   addSubRes,
@@ -448,7 +485,12 @@ export const issue = (
 ) => {
   const currentInstructionIndex = getCurrentInstruction(instructions);
 
-  if (currentInstructionIndex != 0 && !currentInstructionIndex) return null; // Either Stall(branch) or no instructions left then we dont issue an instruction
+  if (currentInstructionIndex != 0 && !currentInstructionIndex) {
+    console.log(
+      "Either Stall(branch) or no instructions left then we dont issue an instruction"
+    );
+    return null;
+  } // Either Stall(branch) or no instructions left then we dont issue an instruction
   // There is a current instruction
   const instruction = instructions[currentInstructionIndex];
 
@@ -474,11 +516,15 @@ export const issue = (
   // Update Register file with row tag and get row details
   const updateRegsValuesGetRowRes = updateRegsValuesGetRow(
     instruction,
+    currentInstructionIndex,
     integerRegisters,
     floatingRegisters,
     rowTag
   );
-  if (!updateRegsValuesGetRowRes) return null; // DK why
+  if (!updateRegsValuesGetRowRes) {
+    console.log("updateRegsValuesGetRowRes is null");
+    return null;
+  } // DK why
   const rowDetails = updateRegsValuesGetRowRes.row;
   integerRegisters = updateRegsValuesGetRowRes.integerRegisters;
   floatingRegisters = updateRegsValuesGetRowRes.floatingRegisters;
@@ -508,6 +554,7 @@ export const issue = (
   instructions[currentInstructionIndex] = {
     ...instructions[currentInstructionIndex],
     issue: clock,
+    rowTag,
   };
 
   // Return updated values of register file, instructions and buffers/Reservation stations
@@ -523,67 +570,381 @@ export const issue = (
   };
 };
 
-export const addInstructionToResource = (
-  instruction,
-  integerRegisters,
-  floationRegisters,
-  resource
-) => {
-  let freeIndex = -1;
-  resource.forEach((row, index) => {
-    if (row.busy == 0) {
-      // Found a vacant slot
-      freeIndex = index;
+const startExecStation = (instructions, clock, station) => {
+  station?.forEach((row) => {
+    if (row.busy == 1 && !instructions[row.instructionIndex].execStart) {
+      // The row is actually occupied and has not yet started executing
+      if (row.Qj == 0 && row.Qk == 0) {
+        // The row has its values so ready to start executing
+        instructions[row.instructionIndex] = {
+          ...instructions[row.instructionIndex],
+          execStart: clock,
+        };
+      }
     }
   });
-  if (freeIndex == -1) return null; // Stall
 
-  // There was a free row in the resource so we proceed
-  const reg2 = instruction.R2;
-  const reg2Type = reg2[0];
-  const reg3 = instruction.R3;
-  const reg3Type = reg3[0];
+  return instructions;
 };
 
-export const simulateNextClock = (
-  instructionsInput,
-  integerRegistersInput,
-  floatingRegistersInput,
-  cacheInput,
-  memoryInput,
-  loadBufferInput,
-  storeBufferInput,
-  addSubResInput,
-  mulDivResInput,
-  integerResInput,
-  clockInput
-) => {
-  const afterIssue = issue(
-    instructionsInput,
-    integerRegistersInput,
-    floatingRegistersInput,
-    null, // cache
-    loadBufferInput,
-    storeBufferInput,
-    addSubResInput,
-    mulDivResInput,
-    integerResInput,
-    clockInput // current clock
-  );
-  if (!afterIssue) {
-    console.log("Issue returned null");
-    return;
+const getLowest32Bits = (value) => {
+  return value & 0xffffffff; // Extract the lowest 32 bits
+};
+
+const computeValues = (row, opcode) => {
+  const VjDouble = row.Vj;
+  const VkDouble = row.Vk;
+  const VjSingle = getLowest32Bits(VjDouble);
+  const VkSingle = getLowest32Bits(VkDouble);
+  const immediate = row.immediate;
+
+  let result = null;
+  switch (opcode) {
+    case "DADDI":
+      result = VjDouble + immediate;
+      break;
+    case "DSUBI":
+      result = VjDouble - immediate;
+      break;
+
+    case "ADD.D":
+      result = VjDouble + VkDouble;
+      break;
+    case "ADD.S":
+      result = VjSingle + VkSingle;
+      break;
+
+    case "SUB.D":
+      result = VjDouble - VkDouble;
+      break;
+    case "SUB.S":
+      result = VjSingle - VkSingle;
+      break;
+
+    case "MUL.D":
+      result = VjDouble * VkDouble;
+      break;
+    case "MUL.S":
+      result = VjSingle * VkSingle;
+      break;
+
+    case "DIV.D":
+      if (VkDouble !== 0) {
+        result = VjDouble / VkDouble;
+      } else {
+        result = 0;
+      }
+      break;
+    case "DIV.S":
+      if (VkSingle !== 0) {
+        result = VjSingle / VkSingle;
+      } else {
+        result = 0;
+      }
+      break;
+
+    case "L":
+      // TODO
+      break;
+    case "S":
+    // TODO
+    default:
+      result = null;
+      break;
   }
-  let {
+  return result;
+};
+
+const endExecStation = (instructions, clock, station, latency, opcodePart) => {
+  station?.forEach((row) => {
+    if (row.busy == 1) {
+      console.log("row.instructionIndex", row.instructionIndex);
+      console.log("execEnd", instructions[row.instructionIndex]?.execEnd);
+    }
+
+    if (
+      row.busy == 1 &&
+      instructions[row.instructionIndex].execStart &&
+      row.opcode.includes(opcodePart) &&
+      !instructions[row.instructionIndex].execEnd
+    ) {
+      console.log("entered");
+
+      // The row is actually occupied &
+      // started executing &&
+      // opcode contains the snippet given
+      // And did not already set execEnd
+      const clockDifference =
+        clock - instructions[row.instructionIndex].execStart;
+
+      if (clockDifference == latency) {
+        // Execute
+        const value = computeValues(
+          row,
+          instructions[row.instructionIndex].opcode
+        );
+
+        instructions[row.instructionIndex].execEnd = clock;
+        if (value) instructions[row.instructionIndex].writeValue = value;
+      }
+    }
+  });
+  return instructions;
+};
+
+// EXECUTE FUNCTIONS
+const handleExecute = (
+  instructions,
+  clock,
+
+  // Resources
+  loadBuffer,
+  storeBuffer,
+  addSubRes,
+  mulDivRes,
+  integerRes,
+
+  // Instruction Latencies
+  latencyStore,
+  latencyLoad,
+  latencyAdd,
+  latencySub,
+  latencyMultiply,
+  latencyDivide,
+  latencyIntegerAdd,
+  latencyIntegerSub,
+
+  // Resource Latencies
+  cachePenalty
+) => {
+  // EXEC End
+  instructions = endExecStation(
+    instructions,
+    clock,
+    loadBuffer,
+    latencyLoad,
+    "L"
+  );
+  instructions = endExecStation(
+    instructions,
+    clock,
+    storeBuffer,
+    latencyStore,
+    "S"
+  );
+  instructions = endExecStation(
+    instructions,
+    clock,
+    addSubRes,
+    latencyAdd,
+    "ADD"
+  );
+  instructions = endExecStation(
+    instructions,
+    clock,
+    addSubRes,
+    latencySub,
+    "SUB"
+  );
+  instructions = endExecStation(
+    instructions,
+    clock,
+    mulDivRes,
+    latencyMultiply,
+    "MUL"
+  );
+  instructions = endExecStation(
+    instructions,
+    clock,
+    mulDivRes,
+    latencyDivide,
+    "DIV"
+  );
+  instructions = endExecStation(
+    instructions,
+    clock,
+    integerRes,
+    latencyIntegerAdd,
+    "ADD"
+  );
+  instructions = endExecStation(
+    instructions,
+    clock,
+    integerRes,
+    latencyIntegerSub,
+    "SUB"
+  );
+
+  // EXEC Start
+  // Loop through all resources check if any of them can start
+  instructions = startExecStation(
+    instructions,
+    clock,
+    loadBuffer,
+    cachePenalty,
+    cachePenalty
+  );
+  instructions = startExecStation(
+    instructions,
+    clock,
+    storeBuffer,
+    cachePenalty
+  );
+  instructions = startExecStation(instructions, clock, addSubRes, cachePenalty);
+  instructions = startExecStation(instructions, clock, mulDivRes, cachePenalty);
+  instructions = startExecStation(
+    instructions,
+    clock,
+    integerRes,
+    cachePenalty
+  );
+
+  // instructions = instructions.map((instruction) => {
+  //   console.log(instruction);
+  // });
+
+  return instructions;
+};
+
+const writeResult = (
+  instructions,
+  integerRegisters,
+  floatingRegisters,
+  cache,
+  memory,
+  loadBuffer,
+  storeBuffer,
+  addSubRes,
+  mulDivRes,
+  integerRes,
+  clock
+) => {
+  let writtenToBus = false;
+  instructions = instructions?.map((instruction) => {
+    if (
+      instruction.writeValue &&
+      !writtenToBus &&
+      !instruction.writeResult &&
+      instruction.execEnd != clock
+    ) {
+      // Instruction finished execution and ready to write
+      // No other instruction has written to bus in this cycle
+      // And has not written before
+      // And has not finished execution this clock cycle
+      writtenToBus = true;
+      // Update Res/Buffer
+      const tag = instruction.rowTag;
+      const value = instruction.writeValue;
+      loadBuffer = refreshResBufferWrite(loadBuffer, tag, value);
+      storeBuffer = refreshResBufferWrite(storeBuffer, tag, value);
+      addSubRes = refreshResBufferWrite(addSubRes, tag, value);
+      mulDivRes = refreshResBufferWrite(mulDivRes, tag, value);
+      integerRes = refreshResBufferWrite(integerRes, tag, value);
+
+      // Update Register File
+      integerRegisters = refreshRegisterFileWrite(integerRegisters, tag, value);
+      floatingRegisters = refreshRegisterFileWrite(
+        floatingRegisters,
+        tag,
+        value
+      );
+      instruction.writeResult = clock;
+      // TODO
+      // WRITE TO MEMORY/CACHE
+    }
+    return instruction;
+  });
+  return {
     instructions,
     integerRegisters,
     floatingRegisters,
+    cache,
+    memory,
     loadBuffer,
     storeBuffer,
     addSubRes,
     mulDivRes,
     integerRes,
-  } = afterIssue;
+  };
+};
+
+const refreshResBufferWrite = (station, tag, value) => {
+  station = station.map((row) => {
+    if (row.tag == tag) {
+      // Reset row
+      row = {
+        busy: 0,
+        opcode: null,
+        Vj: null,
+        Vk: null,
+        Qj: 0,
+        Qk: 0,
+        A: null,
+      };
+    }
+    if (row.Qj == tag) {
+      row.Vj = value;
+      row.Qj = 0;
+    }
+    if (row.Qk == tag) {
+      row.Vk = value;
+      row.Qk = 0;
+    }
+    return row;
+  });
+  return station;
+};
+
+const refreshRegisterFileWrite = (registerFile, tag, value) => {
+  Object.keys(registerFile).forEach((registerName, index) => {
+    const register = registerFile[registerName];
+    if (register.Qi == tag) {
+      register.value = value;
+      register.Qi = 0;
+    }
+    registerFile[registerName] = register;
+  });
+  return registerFile;
+};
+
+export const simulateNextClock = (
+  instructions,
+  integerRegisters,
+  floatingRegisters,
+  cache,
+  memory,
+  loadBuffer,
+  storeBuffer,
+  addSubRes,
+  mulDivRes,
+  integerRes,
+
+  // Instruction Latencies
+  latencyStore,
+  latencyLoad,
+  latencyAdd,
+  latencySub,
+  latencyMultiply,
+  latencyDivide,
+  latencyIntegerAdd,
+  latencyIntegerSub,
+
+  clock,
+
+  // Resource Latencies
+  cachePenalty
+) => {
+  let instructionsTemp = instructions;
+  let integerRegistersTemp = integerRegisters;
+  let floatingRegistersTemp = floatingRegisters;
+  let cacheTemp = cache;
+  let memoryTemp = memory;
+  let loadBufferTemp = loadBuffer;
+  let storeBufferTemp = storeBuffer;
+  let addSubResTemp = addSubRes;
+  let mulDivResTemp = mulDivRes;
+  let integerResTemp = integerRes;
+
   // console.dir(JSON.stringify(instructions, null, 2));
   // console.dir(JSON.stringify(integerRegisters, null, 2));
   // console.dir(JSON.stringify(floatingRegisters, null, 2));
@@ -593,17 +954,93 @@ export const simulateNextClock = (
   // console.dir(JSON.stringify(mulDivRes, null, 2));
   // console.dir(JSON.stringify(integerRes, null, 2));
 
+  instructionsTemp = handleExecute(
+    instructionsTemp,
+    clock,
+    // Resources
+    loadBufferTemp,
+    storeBufferTemp,
+    addSubResTemp,
+    mulDivResTemp,
+    integerResTemp,
+    // Instruction Latencies
+    latencyStore,
+    latencyLoad,
+    latencyAdd,
+    latencySub,
+    latencyMultiply,
+    latencyDivide,
+    latencyIntegerAdd,
+    latencyIntegerSub,
+    // Resource Latencies
+    cachePenalty
+  );
+
+  // Done it after execute because if not, instruction can start executing the same time
+  // the provider instruction has written result on bus
+  ({
+    instructions: instructionsTemp,
+    integerRegisters: integerRegistersTemp,
+    floatingRegisters: floatingRegistersTemp,
+    loadBuffer: loadBufferTemp,
+    storeBuffer: storeBufferTemp,
+    addSubRes: addSubResTemp,
+    mulDivRes: mulDivResTemp,
+    integerRes: integerResTemp,
+  } = writeResult(
+    instructionsTemp,
+    integerRegistersTemp,
+    floatingRegistersTemp,
+    cacheTemp,
+    memoryTemp,
+    loadBufferTemp,
+    storeBufferTemp,
+    addSubResTemp,
+    mulDivResTemp,
+    integerResTemp,
+    clock
+  ));
+
+  // ISSUE
+  const afterIssue = issue(
+    instructionsTemp,
+    integerRegistersTemp,
+    floatingRegistersTemp,
+    loadBufferTemp,
+    storeBufferTemp,
+    addSubResTemp,
+    mulDivResTemp,
+    integerResTemp,
+    clock // current clock
+  );
+  if (!afterIssue) {
+    console.log("Issue returned null");
+  } else {
+    ({
+      instructions: instructionsTemp,
+      integerRegisters: integerRegistersTemp,
+      floatingRegisters: floatingRegistersTemp,
+      loadBuffer: loadBufferTemp,
+      storeBuffer: storeBufferTemp,
+      addSubRes: addSubResTemp,
+      mulDivRes: mulDivResTemp,
+      integerRes: integerResTemp,
+    } = afterIssue);
+  }
+
+  // exec
+  // wr
   return {
-    instructions: instructionsInput,
-    integerRegisters: integerRegistersInput,
-    floatingRegisters: floatingRegistersInput,
-    cache: cacheInput,
-    memory: memoryInput,
-    loadBuffer: loadBufferInput,
-    storeBuffer: storeBufferInput,
-    addSubRes: addSubResInput,
-    mulDivRes: mulDivResInput,
-    integerRes: integerResInput,
+    instructions: instructionsTemp,
+    integerRegisters: integerRegisters,
+    floatingRegisters: floatingRegisters,
+    cache: cache,
+    memory: memory,
+    loadBuffer: loadBuffer,
+    storeBuffer: storeBuffer,
+    addSubRes: addSubRes,
+    mulDivRes: mulDivRes,
+    integerRes: integerRes,
     ...afterIssue,
   }; // Just initial to return all vars
 };

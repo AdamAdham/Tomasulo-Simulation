@@ -18,6 +18,12 @@ import DisplayStation from "../Common/DisplayStation";
 import { ResourcesContext } from "../Common/Context/ResourcesContext";
 import { simulateNextClock } from "../Common/Functions";
 import { MemoryContext } from "../Common/Context/MemoryContext";
+import { InstructionLatencyContext } from "../Common/Context/InstructionLatencyContext";
+import DisplayMemory from "../Common/DisplayMemory";
+import DisplayCache from "../Common/DisplayCache";
+import DisplayLatencies from "../Common/DisplayLatencies";
+import DisplayIntegerStation from "../Common/DisplayIntegerStation";
+const history = new Array(500).fill(0);
 
 const Simulation = () => {
   const { instructions, setInstructions } = useContext(InstructionsContext);
@@ -29,7 +35,7 @@ const Simulation = () => {
   );
   const { clock, setClock, incrementClock, decrementClock, resetClock } =
     useContext(ClockContext);
-  const { cache, setCache } = useContext(CacheContext);
+  const { cache, setCache, cachePenalty } = useContext(CacheContext);
   const { simulation, setSimulation } = useContext(SimulationContext);
   const {
     loadBuffer,
@@ -43,6 +49,17 @@ const Simulation = () => {
     integerRes,
     setIntegerRes,
   } = useContext(ResourcesContext);
+
+  const {
+    latencyStore,
+    latencyLoad,
+    latencyAdd,
+    latencySub,
+    latencyMultiply,
+    latencyDivide,
+    latencyIntegerAdd,
+    latencyIntegerSub,
+  } = useContext(InstructionLatencyContext);
   const { memory, setMemory } = useContext(MemoryContext);
 
   const [tabItems, setTabItems] = useState([
@@ -106,7 +123,17 @@ const Simulation = () => {
           <div style={{ display: "flex", justifyContent: "space-around" }}>
             <DisplayStation name={"Add/Sub Res"} station={addSubRes} />
             <DisplayStation name={"Mul/Div Res"} station={mulDivRes} />
-            <DisplayStation name={"Integer Res"} station={integerRes} />
+            <DisplayIntegerStation name={"Integer Res"} station={integerRes} />
+          </div>
+        ),
+      },
+      {
+        key: "4",
+        label: "Memory & Cache",
+        children: (
+          <div style={{ display: "flex", justifyContent: "space-around" }}>
+            <DisplayMemory memory={memory} />
+            <DisplayCache cache={cache} />
           </div>
         ),
       },
@@ -146,18 +173,40 @@ const Simulation = () => {
         addSubRes,
         mulDivRes,
         integerRes,
-        clock // Produce values for that clock cycle (current clock cycle)
+
+        // Instruction Latencies
+        latencyStore,
+        latencyLoad,
+        latencyAdd,
+        latencySub,
+        latencyMultiply,
+        latencyDivide,
+        latencyIntegerAdd,
+        latencyIntegerSub,
+
+        clock,
+
+        // Resource Latencies
+        cachePenalty
       );
-      // console.log("nextSim", nextSimulation);
 
       // Set new values to be displayed
       if (!nextSimulation) return; // Error occured not sure TODO
       // Set new values so that when clk is the same again we just get the value directly with no simulation
-      setSimulation((prev) => [...prev, nextSimulation]);
+      setSimulation((prev) => {
+        if (!prev[clock]) {
+          prev = [...prev, nextSimulation];
+        } else {
+          prev[clock] = nextSimulation;
+        }
+        return prev;
+      });
     }
   }, [clock]);
 
   useEffect(() => {
+    console.log(simulation);
+
     if (simulation[clock]) {
       setContext(simulation[clock]);
     }
@@ -168,7 +217,11 @@ const Simulation = () => {
     const initialSimulation = JSON.parse(
       localStorage.getItem("initialSimulation")
     );
-    // console.log("initialSimulation", initialSimulation);
+    const initialInstructions = JSON.parse(
+      localStorage.getItem("initialInstructions")
+    );
+
+    initialSimulation.instructions = initialInstructions;
 
     setSimulation([initialSimulation]);
   };
@@ -198,7 +251,7 @@ const Simulation = () => {
           decrementClock={decrementClock}
         />
       </div>
-
+      <DisplayLatencies />
       <DisplayInstructionsSimulation instructions={instructions} />
 
       <Divider />
