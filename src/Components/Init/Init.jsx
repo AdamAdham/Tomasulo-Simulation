@@ -19,7 +19,6 @@ import { MemoryContext } from "../Common/Context/MemoryContext";
 
 const Init = () => {
   const navigate = useNavigate();
-  // const { initializeCache } = useContext(CacheContext);
   const { instructions } = useContext(InstructionsContext);
   const { cacheSize, blockSize, cache, setCache } = useContext(CacheContext);
   const { memory } = useContext(MemoryContext);
@@ -58,8 +57,6 @@ const Init = () => {
       mulDivResSize,
       integerResSize
     );
-    console.log("updatedResources", updatedResources);
-
     const loadBufferUpdated = updatedResources.loadBuffer;
     const storeBufferUpdated = updatedResources.storeBuffer;
     const addSubResUpdated = updatedResources.addSubRes;
@@ -72,10 +69,9 @@ const Init = () => {
     setIntegerRes(integerResUpdated);
 
     // Init simulation clock cycle 0
-    console.log(updatedCache);
-
     setSimulation([
       {
+        instructionQueue: [],
         instructions,
         integerRegisters,
         floatingRegisters,
@@ -91,6 +87,7 @@ const Init = () => {
     localStorage.setItem(
       "initialSimulation",
       JSON.stringify({
+        instructionQueue: [],
         instructions,
         integerRegisters,
         floatingRegisters,

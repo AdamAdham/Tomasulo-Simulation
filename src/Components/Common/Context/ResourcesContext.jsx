@@ -5,11 +5,11 @@ export const ResourcesContext = createContext();
 
 // Provide the context
 export const ResourcesProvider = ({ children }) => {
-  const [loadBufferSize, setLoadBufferSize] = useState(0);
-  const [storeBufferSize, setStoreBufferSize] = useState(0);
-  const [addSubResSize, setAddSubResSize] = useState(0);
-  const [mulDivResSize, setMulDivResSize] = useState(0);
-  const [integerResSize, setIntegerResSize] = useState(0);
+  const [loadBufferSize, setLoadBufferSize] = useState(3);
+  const [storeBufferSize, setStoreBufferSize] = useState(3);
+  const [addSubResSize, setAddSubResSize] = useState(3);
+  const [mulDivResSize, setMulDivResSize] = useState(3);
+  const [integerResSize, setIntegerResSize] = useState(3);
 
   const [loadBuffer, setLoadBuffer] = useState([]);
   const [storeBuffer, setStoreBuffer] = useState([]);

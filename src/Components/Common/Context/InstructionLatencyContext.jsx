@@ -13,6 +13,7 @@ export const InstructionLatencyProvider = ({ children }) => {
   const [latencyDivide, setLatencyDivide] = useState(5); // Default latency for `divide`
   const [latencyIntegerAdd, setLatencyIntegerAdd] = useState(1);
   const [latencyIntegerSub, setLatencyIntegerSub] = useState(1);
+  const [latencyBranch, setLatencyBranch] = useState(1);
 
   return (
     <InstructionLatencyContext.Provider
@@ -33,6 +34,8 @@ export const InstructionLatencyProvider = ({ children }) => {
         setLatencyIntegerAdd,
         latencyIntegerSub,
         setLatencyIntegerSub,
+        latencyBranch,
+        setLatencyBranch,
       }}
     >
       {children}

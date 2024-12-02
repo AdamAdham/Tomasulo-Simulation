@@ -1,9 +1,31 @@
 import { IconButton } from "@mui/material";
-import React from "react";
+import React, { useContext, useRef } from "react";
 
 import { KeyboardArrowRight, KeyboardArrowLeft } from "@mui/icons-material";
+import { ClockContext } from "./Context/ClockContext";
 
-const ClockControl = ({ clock, incrementClock, decrementClock }) => {
+const ClockControl = () => {
+  const { clock, incrementClock, decrementClock } = useContext(ClockContext);
+  const minTimeDifference = 500;
+  const lastUpdateTime = useRef(Date.now());
+
+  const handleClock = (operation) => {
+    const currentTime = Date.now();
+
+    if (currentTime - lastUpdateTime.current >= minTimeDifference) {
+      // Update clock and the last increment time
+      if (operation == "increment") incrementClock();
+      else decrementClock();
+      lastUpdateTime.current = currentTime;
+      console.log("Clock incremented:", clock + 1);
+    } else {
+      console.log(
+        `Cannot ${operation} clock. Wait for`,
+        minTimeDifference - (currentTime - lastUpdateTime.current),
+        "ms"
+      );
+    }
+  };
   return (
     <div
       style={{
@@ -21,7 +43,7 @@ const ClockControl = ({ clock, incrementClock, decrementClock }) => {
           width: "40px",
           backgroundColor: "#192126",
         }}
-        onClick={decrementClock}
+        onClick={() => handleClock("decrement")}
       >
         <KeyboardArrowLeft style={{ fontSize: "30px" }} />
       </IconButton>
@@ -47,7 +69,7 @@ const ClockControl = ({ clock, incrementClock, decrementClock }) => {
           width: "40px",
           backgroundColor: "#192126",
         }}
-        onClick={incrementClock}
+        onClick={() => handleClock("increment")}
       >
         <KeyboardArrowRight style={{ fontSize: "30px" }} />
       </IconButton>

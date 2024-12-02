@@ -82,6 +82,10 @@ assume Write through? (el enta 3ayzo) Write through
 assume Cache block size range will be larger than 8 bytes? because if not double precision hayetgab ezay law keda? Said okay
 cache hit and miss etc, hayetzawed 3al execute wala hangeeb if(hit)min(exec,hit) , if(miss) min(exec,miss)? Disregard hit time now (will answer) Penalty will just add to ld and store latency
 
+ASK:
+Store affects memory in write Result?
+latency if 1 execStart = 5 and execEnd = 6, because it is defined as delay?
+
 # Flow
 
 array of objects, each object = {cache:cacheContent, integerRegisters:integerRegistersContent, floatingRegisters:floatingRegisterContent, memory:memoryContent, buffers, resStations, etc..}

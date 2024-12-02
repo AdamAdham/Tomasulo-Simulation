@@ -37,6 +37,8 @@ const InitStatistics = () => {
     setLatencyIntegerAdd,
     latencyIntegerSub,
     setLatencyIntegerSub,
+    latencyBranch,
+    setLatencyBranch,
   } = useContext(InstructionLatencyContext);
 
   const {
@@ -69,10 +71,6 @@ const InitStatistics = () => {
 
   const handleCacheSize = (e) => {
     let value = powerOfTwo(e.target.value);
-    if (value < 64) {
-      // cannot have block size less than 64 for double precision load/stores
-      value = 64;
-    }
     if (value > memorySize) {
       value = memorySize;
     }
@@ -145,7 +143,7 @@ const InitStatistics = () => {
           onChange={(e) =>
             handleGreaterZeroChange(e.target.value, setLatencyStore)
           }
-          style={{ width: "150px", marginLeft: "20px" }}
+          style={{ width: "120px", marginLeft: "20px" }}
         />
 
         <TextField
@@ -156,7 +154,7 @@ const InitStatistics = () => {
           onChange={(e) =>
             handleGreaterZeroChange(e.target.value, setLatencyLoad)
           }
-          style={{ width: "150px", marginLeft: "20px" }}
+          style={{ width: "120px", marginLeft: "20px" }}
         />
 
         <TextField
@@ -167,7 +165,7 @@ const InitStatistics = () => {
           onChange={(e) =>
             handleGreaterZeroChange(e.target.value, setLatencyAdd)
           }
-          style={{ width: "150px", marginLeft: "20px" }}
+          style={{ width: "120px", marginLeft: "20px" }}
         />
 
         <TextField
@@ -178,7 +176,7 @@ const InitStatistics = () => {
           onChange={(e) =>
             handleGreaterZeroChange(e.target.value, setLatencySub)
           }
-          style={{ width: "150px", marginLeft: "20px" }}
+          style={{ width: "120px", marginLeft: "20px" }}
         />
 
         <TextField
@@ -189,7 +187,7 @@ const InitStatistics = () => {
           onChange={(e) =>
             handleGreaterZeroChange(e.target.value, setLatencyMultiply)
           }
-          style={{ width: "150px", marginLeft: "20px" }}
+          style={{ width: "120px", marginLeft: "20px" }}
         />
 
         <TextField
@@ -200,29 +198,40 @@ const InitStatistics = () => {
           onChange={(e) =>
             handleGreaterZeroChange(e.target.value, setLatencyDivide)
           }
-          style={{ width: "150px", marginLeft: "20px" }}
+          style={{ width: "120px", marginLeft: "20px" }}
         />
 
         <TextField
           id="latency-integer-sub"
-          label="Integer Sub Latency"
+          label="Int Sub Latency"
           variant="outlined"
           value={latencyIntegerSub}
           onChange={(e) =>
             handleGreaterZeroChange(e.target.value, setLatencyIntegerSub)
           }
-          style={{ width: "150px", marginLeft: "20px" }}
+          style={{ width: "120px", marginLeft: "20px" }}
         />
 
         <TextField
           id="latency-integer-add"
-          label="Integer Add Latency"
+          label="Int Add Latency"
           variant="outlined"
           value={latencyIntegerAdd}
           onChange={(e) =>
             handleGreaterZeroChange(e.target.value, setLatencyIntegerAdd)
           }
-          style={{ width: "150px", marginLeft: "20px" }}
+          style={{ width: "120px", marginLeft: "20px" }}
+        />
+
+        <TextField
+          id="latency-integer-add"
+          label="Branch Latency"
+          variant="outlined"
+          value={latencyBranch}
+          onChange={(e) =>
+            handleGreaterZeroChange(e.target.value, setLatencyBranch)
+          }
+          style={{ width: "120px", marginLeft: "20px" }}
         />
       </div>
       <div>
