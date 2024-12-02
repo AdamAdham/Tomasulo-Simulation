@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Table, Button } from "antd";
-import { binaryToDecimal, replaceLastBitsWithZeros, read, updateMemoryRead, write, updateMemoryWrite } from "./Context/MemoryAccess";
+import { binaryToDecimal, replaceLastBitsWithZeros, read, updateMemoryRead, write, updateMemoryWrite, decimalToBinary } from "./Context/MemoryAccess";
 
 const columns = [
   {
@@ -53,7 +53,7 @@ const DisplayfloatingRegisters = ({ floatingRegisters }) => {
     let validityTemp = [];
     for (let i = 0; i < 32 / 8; i++) {
       // create block of size BlockSize/8
-      block.push("empty");
+      block.push(0);
     }
     for (let i = 0; i < sets; i++) {
       // create block of size BlockSize/8
@@ -66,10 +66,12 @@ const DisplayfloatingRegisters = ({ floatingRegisters }) => {
    let returnedInt =  binaryToDecimal("111111111111");
     // console.log(returnedInt);
      let returnedInt2 =  binaryToDecimal("0101");
-    // console.log(returnedInt2);
+     let returnedInt3 = decimalToBinary(5,12);
+
+     console.log(returnedInt3);
      
       let returnedString = replaceLastBitsWithZeros("101111111111111",4);
-    
+    /*
       memoryArray[2345] = "1111";
 
       console.log(memoryArray[2345]);
@@ -137,7 +139,7 @@ const DisplayfloatingRegisters = ({ floatingRegisters }) => {
       memoryArray = updatedStaff4[1];
       console.log(memoryArray[2344]);
       validityTemp = updatedStaff4[2];
-      tagsTemp = updatedStaff4[3];    
+      tagsTemp = updatedStaff4[3];    */
      // console.log(memoryArray[2344]);
    
     

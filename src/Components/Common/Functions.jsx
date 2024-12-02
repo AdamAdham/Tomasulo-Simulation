@@ -42,20 +42,26 @@ export const powerOfTwo = (value) => {
   return temp - lowerPower < higherPower - temp ? lowerPower : higherPower;
 };
 
-export const initializeCache = (cacheSize, blockSize) => {
+export const initializeCache = () => {
+  let cacheSize = 128;
+  let blockSize = 32;
   let sets = cacheSize / blockSize;
   let cacheTemp = [];
   let block = [];
-  // TODO REMOVE /8 because the block size is number of cells not the bits
-  for (let i = 0; i < blockSize; i++) {
+  let tagsTemp = [];
+  let validityTemp = [];
+  for (let i = 0; i < blockSize / 8; i++) {
     // create block of size BlockSize/8
     block.push(0);
   }
   for (let i = 0; i < sets; i++) {
     // create block of size BlockSize/8
     cacheTemp.push(block);
+    tagsTemp.push("empty");
+    validityTemp.push(0);
   }
-  return cacheTemp;
+  
+  return [cacheTemp, tagsTemp, validityTemp];
 };
 
 export const initializeResources = (
