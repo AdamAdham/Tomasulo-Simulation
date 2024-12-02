@@ -1,3 +1,28 @@
+
+export function decimalToBinary(decimalNumber, bitLength) {
+  // Ensure the input is a valid non-negative integer
+  if (!Number.isInteger(decimalNumber) || decimalNumber < 0) {
+    throw new Error("Input must be a non-negative integer.");
+  }
+
+  // Convert the decimal number to a binary string
+  let binaryString = decimalNumber.toString(2);
+
+  // Adjust the length of the binary string to the specified bit length
+  if (binaryString.length > bitLength) {
+    // Truncate extra bits from the left if the binary string is too long
+    binaryString = binaryString.slice(-bitLength);
+  } else if (binaryString.length < bitLength) {
+    // Pad with leading zeros if the binary string is too short
+    binaryString = binaryString.padStart(bitLength, "0");
+  }
+
+  return binaryString;
+};
+
+
+
+
 export function binaryToDecimal(binaryString) {
   // Ensure the input is a valid binary string
   if (!/^[01]+$/.test(binaryString)) {
@@ -36,13 +61,13 @@ return outbot;
 
 
 
-export function read(cacheArray, memoryArray, validityArray, tagsArray, location ){
-  let memorySize = 4096;
-
-  let cacheSize = 96;
-  let blockSize = 32;
+export function read(cacheArray, memoryArray, validityArray, tagsArray, location, memorySize, cacheSize, blockSize ){
+  // memorySize = 4096;
+ 
+   //cacheSize = 96;
+  // blockSize = 32;
   //location = "000001101100";
-  let hitOrMiss = "still not knowing hit or miss";
+  let hit = false;
   let executeMissCode = 0;
   let addressBits = Math.log2(memorySize);
 
@@ -60,6 +85,10 @@ export function read(cacheArray, memoryArray, validityArray, tagsArray, location
   bitsCountOffsets = Math.ceil(bitsCountOffsets);
   addressBits = Math.ceil(addressBits);
   let bitsCountTag = addressBits - bitsCountIndex - bitsCountOffsets;
+
+
+
+  location = decimalToBinary(location, addressBits);
 
 // Extract substrings
   let tagBin = location.substring(0, bitsCountTag);
@@ -79,9 +108,9 @@ export function read(cacheArray, memoryArray, validityArray, tagsArray, location
   if(tagsArray[indexDecimal] == tagBin){
       let blockInhand = cacheArray[indexDecimal];
       let dataRead = blockInhand[offsetDecimal];
-      hitOrMiss = "congrats, it is a hit";
+      hit = true;
       //return [hitOrMiss, dataRead, locationDecimal];
-      return [hitOrMiss, dataRead, indexDecimal, tagBin, locationDecimal, offsetDecimal, blockInhand];
+      return [hit, dataRead, indexDecimal, tagBin, locationDecimal, offsetDecimal, blockInhand];
 
   }
   else{
@@ -99,7 +128,7 @@ export function read(cacheArray, memoryArray, validityArray, tagsArray, location
  }
 
  if(executeMissCode == 1){
-  hitOrMiss = "bad, it was a miss";
+  hit = false;
   let count = missLocationStartDecimal;
   for (let i = 0; i < blockSize / 8; i++) {
       // create block of size BlockSize/8
@@ -107,7 +136,7 @@ export function read(cacheArray, memoryArray, validityArray, tagsArray, location
       count = count +1;
     }
     let dataRead = memoryArray[locationDecimal];
-    return [hitOrMiss, dataRead, indexDecimal, tagBin, locationDecimal, offsetDecimal, block];
+    return [hit, dataRead, indexDecimal, tagBin, locationDecimal, offsetDecimal, block];
 
  }
 
@@ -139,12 +168,12 @@ export function updateMemoryRead (cacheArrayReal, validityArrayReal, tagsArrayRe
 
 
 
- export function write (cacheArray, memoryArray, validityArray, tagsArray, location, dataWrite ){
-  let memorySize = 4096;
-  let cacheSize = 96;
-  let blockSize = 32;
+ export function write (cacheArray, memoryArray, validityArray, tagsArray, location, dataWrite, memorySize, cacheSize, blockSize ){
+  // memorySize = 4096;
+  // cacheSize = 96;
+   //blockSize = 32;
   //location = "000001101100";
-  let hitOrMiss = "still not knowing hit or miss";
+  let hit = false;
   let executeMissCode = 0;
   let addressBits = Math.log2(memorySize);
 
@@ -162,6 +191,8 @@ export function updateMemoryRead (cacheArrayReal, validityArrayReal, tagsArrayRe
  bitsCountOffsets = Math.ceil(bitsCountOffsets);
  addressBits = Math.ceil(addressBits);
  let bitsCountTag = addressBits - bitsCountIndex - bitsCountOffsets;
+
+ location = decimalToBinary(location, addressBits);
 
 // Extract substrings
  let tagBin = location.substring(0, bitsCountTag);
@@ -181,10 +212,10 @@ if(validityArray[indexDecimal] == 1){
  if(tagsArray[indexDecimal] == tagBin){
   
     block = cacheArray[indexDecimal];
-     hitOrMiss = "congrats, it is a hit";
+     hit = true;
   
 
-     return [hitOrMiss, dataWrite, indexDecimal, tagBin, locationDecimal, offsetDecimal, block];
+     return [hit, dataWrite, indexDecimal, tagBin, locationDecimal, offsetDecimal, block];
 
  }
  else{
@@ -202,7 +233,7 @@ else{
 }
 
 if(executeMissCode == 1){
- hitOrMiss = "bad, it was a miss";
+ hit = false;
  let count = missLocationStartDecimal;
  for (let i = 0; i < blockSize / 8; i++) {
      // create block of size BlockSize/8
@@ -210,7 +241,7 @@ if(executeMissCode == 1){
      count = count +1;
    }
    //let dataRead = memoryArray[locationDecimal];
-   return [hitOrMiss, dataWrite, indexDecimal, tagBin, locationDecimal, offsetDecimal, block];
+   return [hit, dataWrite, indexDecimal, tagBin, locationDecimal, offsetDecimal, block];
    
 
 }
