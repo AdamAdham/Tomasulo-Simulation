@@ -1,4 +1,4 @@
-export const memorySize = 1024;
+export const memorySize = 4096;
 export const opcodeList = [
   // Integer Operations
   "DADDI", // Integer Add Immediate
