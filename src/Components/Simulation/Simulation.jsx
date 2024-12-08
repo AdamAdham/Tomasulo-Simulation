@@ -45,8 +45,19 @@ const Simulation = () => {
     FloatingRegistersContext
   );
   const { clock, setClock } = useContext(ClockContext);
-  const { cache, setCache, cachePenalty } = useContext(CacheContext);
+  const {
+    cache,
+    setCache,
+    cachePenalty,
+    cacheSize,
+    blockSize,
+    validity,
+    setValidity,
+    tags,
+    setTags,
+  } = useContext(CacheContext);
   const { simulation, setSimulation } = useContext(SimulationContext);
+
   const [instructionQueue, setInstructionQueue] = useState([]);
   const {
     loadBuffer,
@@ -142,20 +153,39 @@ const Simulation = () => {
         key: "4",
         label: "Memory & Cache",
         children: (
-          <div style={{ display: "flex", justifyContent: "space-around" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "45% 45%",
+              gridGap: "10%",
+              margin: "50px 100px",
+            }}
+          >
             <DisplayMemory memory={memory} />
             <DisplayCache cache={cache} />
           </div>
         ),
       },
     ]);
-  }, [integerRegisters]);
+  }, [
+    integerRegisters,
+    floatingRegisters,
+    loadBuffer,
+    storeBuffer,
+    addSubRes,
+    mulDivRes,
+    integerRes,
+    memory,
+    cache,
+  ]);
 
   const setContext = (simulationInstance) => {
     setInstructionQueue([...simulationInstance.instructionQueue]);
     setIntegerRegisters({ ...simulationInstance.integerRegisters });
     setFloatingRegisters({ ...simulationInstance.floatingRegisters });
     setCache([...simulationInstance.cache]);
+    setValidity([...simulationInstance.validity]);
+    setTags([...simulationInstance.tags]);
     setMemory([...simulationInstance.memory]);
     setLoadBuffer([...simulationInstance.loadBuffer]);
     setStoreBuffer([...simulationInstance.storeBuffer]);
@@ -167,9 +197,9 @@ const Simulation = () => {
     if (historyInstructions[clock]) {
       setInstructions(historyInstructions[clock]?.instructions);
     }
-    if (historyQueue[clock - 1]) {
+    if (historyQueue[clock]) {
       // Have already done it
-      setContext(historyQueue[clock - 1]);
+      setContext(historyQueue[clock]);
     } else {
       // Has not been simulated
       // Generate new values
@@ -178,7 +208,7 @@ const Simulation = () => {
 
       // const nextSimulation = null;
       let nextSimulation = null;
-      console.log(historyInstructions);
+      // console.log(historyInstructions);
 
       if (historyInstructions[clock - 1]) {
         nextSimulation = simulateNextClock(
@@ -187,6 +217,11 @@ const Simulation = () => {
           structuredClone(historyInstructions[clock - 1].floatingRegisters),
           structuredClone(historyInstructions[clock - 1].cache),
           structuredClone(historyInstructions[clock - 1].memory),
+          structuredClone(historyInstructions[clock - 1].validity),
+          structuredClone(historyInstructions[clock - 1].tags),
+          memorySize,
+          cacheSize,
+          blockSize,
           structuredClone(historyInstructions[clock - 1].loadBuffer),
           structuredClone(historyInstructions[clock - 1].storeBuffer),
           structuredClone(historyInstructions[clock - 1].addSubRes),
@@ -211,6 +246,40 @@ const Simulation = () => {
         );
       }
 
+      // console.log("instructs b4", {
+      //   instructionQueue: structuredClone(instructionQueue),
+      //   instructions: structuredClone(instructions),
+      //   integerRegisters: structuredClone(integerRegisters),
+      //   floatingRegisters: structuredClone(floatingRegisters),
+      //   cache: structuredClone(cache),
+      //   memory: structuredClone(memory),
+      //   validity: structuredClone(validity),
+      //   tags: structuredClone(tags),
+      //   memorySize,
+      //   cacheSize,
+      //   blockSize,
+      //   loadBuffer: structuredClone(loadBuffer),
+      //   storeBuffer: structuredClone(storeBuffer),
+      //   addSubRes: structuredClone(addSubRes),
+      //   mulDivRes: structuredClone(mulDivRes),
+      //   integerRes: structuredClone(integerRes),
+
+      //   // Instruction Latencies
+      //   latencyStore,
+      //   latencyLoad,
+      //   latencyAdd,
+      //   latencySub,
+      //   latencyMultiply,
+      //   latencyDivide,
+      //   latencyIntegerAdd,
+      //   latencyIntegerSub,
+      //   latencyBranch,
+
+      //   clock,
+
+      //   // Resource Latencies
+      //   cachePenalty,
+      // });
       const nextSimulationQueue = simulateNextClockQueue(
         structuredClone(instructionQueue),
         structuredClone(instructions),
@@ -218,6 +287,11 @@ const Simulation = () => {
         structuredClone(floatingRegisters),
         structuredClone(cache),
         structuredClone(memory),
+        structuredClone(validity),
+        structuredClone(tags),
+        memorySize,
+        cacheSize,
+        blockSize,
         structuredClone(loadBuffer),
         structuredClone(storeBuffer),
         structuredClone(addSubRes),
@@ -247,11 +321,11 @@ const Simulation = () => {
       setInstructionQueue(nextSimulationQueue.instructions);
       setContext(nextSimulationQueue);
       historyQueue.push(nextSimulationQueue);
-      console.log(historyQueue);
+      // console.log(historyQueue);
 
       setInstructions(nextSimulation.instructions);
       historyInstructions.push(nextSimulation);
-      console.log(historyInstructions);
+      // console.log(historyInstructions);
 
       // setSimulation((prev) => {
       //   if (!prev[clock]) {
@@ -270,59 +344,59 @@ const Simulation = () => {
     }
   }, [simulation]);
 
-  const loadInstructions = () => {
-    setClock(0);
-    const initialSimulation = JSON.parse(
-      localStorage.getItem("initialSimulation")
-    );
-    const initialInstructions = JSON.parse(
-      localStorage.getItem("initialInstructions")
-    );
-    initialSimulation.instructionQueue = [];
-    setContext(initialSimulation);
-    historyInstructions = [initialSimulation];
-    setInstructions(initialInstructions);
-  };
+  // const loadInstructions = () => {
+  //   setClock(0);
+  //   const initialSimulation = JSON.parse(
+  //     localStorage.getItem("initialSimulation")
+  //   );
+  //   const initialInstructions = JSON.parse(
+  //     localStorage.getItem("initialInstructions")
+  //   );
+  //   initialSimulation.instructionQueue = [];
+  //   setContext(initialSimulation);
+  //   historyInstructions = [initialSimulation];
+  //   setInstructions(initialInstructions);
+  // };
 
-  const resetSimulation = () => {
-    setClock(0);
-    setInstructions([]);
-    let temp = {};
-    // for (let i = 0; i < 30; i++) {
-    //   temp[`R${i}`] = { value: 0, Qi: 0 };
-    // }
-    for (let i = 0; i < 30; i++) {
-      temp[`R${i}`] = { value: i, Qi: 0 };
-    }
-    setIntegerRegisters(temp);
+  // const resetSimulation = () => {
+  //   setClock(0);
+  //   setInstructions([]);
+  //   let temp = {};
+  //   // for (let i = 0; i < 30; i++) {
+  //   //   temp[`R${i}`] = { value: 0, Qi: 0 };
+  //   // }
+  //   for (let i = 0; i < 30; i++) {
+  //     temp[`R${i}`] = { value: i, Qi: 0 };
+  //   }
+  //   setIntegerRegisters(temp);
 
-    let floatingTemp = {};
-    // for (let i = 0; i < 30; i++) {
-    //   temp[`F${i}`] = { value: 0, Qi: 0 };
-    // }
-    for (let i = 0; i < 30; i++) {
-      floatingTemp[`F${i}`] = { value: i, Qi: 0 };
-    }
-    setFloatingRegisters(floatingTemp);
+  //   let floatingTemp = {};
+  //   // for (let i = 0; i < 30; i++) {
+  //   //   temp[`F${i}`] = { value: 0, Qi: 0 };
+  //   // }
+  //   for (let i = 0; i < 30; i++) {
+  //     floatingTemp[`F${i}`] = { value: i, Qi: 0 };
+  //   }
+  //   setFloatingRegisters(floatingTemp);
 
-    const cacheInit = initializeCache();
-    setCache(cacheInit);
+  //   const cacheInit = initializeCache();
+  //   setCache(cacheInit);
 
-    setMemory(Array(memorySize).fill(0));
-    const initialSimulation = JSON.parse(
-      localStorage.getItem("initialSimulation")
-    );
+  //   setMemory(Array(memorySize).fill(0));
+  //   const initialSimulation = JSON.parse(
+  //     localStorage.getItem("initialSimulation")
+  //   );
 
-    setLoadBuffer([]);
-    setStoreBuffer([]);
-    setAddSubRes([]);
-    setMulDivRes([]);
-    setIntegerRes([]);
+  //   setLoadBuffer([]);
+  //   setStoreBuffer([]);
+  //   setAddSubRes([]);
+  //   setMulDivRes([]);
+  //   setIntegerRes([]);
 
-    initialSimulation.instructionQueue = [];
-    setContext(initialSimulation);
-    historyInstructions = [initialSimulation];
-  };
+  //   initialSimulation.instructionQueue = [];
+  //   setContext(initialSimulation);
+  //   historyInstructions = [initialSimulation];
+  // };
 
   useEffect(() => {
     setClock(0);
@@ -332,6 +406,7 @@ const Simulation = () => {
     initialSimulation.instructionQueue = [];
     setContext(initialSimulation);
     historyInstructions = [initialSimulation];
+    historyQueue = [initialSimulation];
   }, []);
 
   return (

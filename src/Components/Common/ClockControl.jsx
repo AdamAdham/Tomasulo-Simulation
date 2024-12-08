@@ -17,13 +17,12 @@ const ClockControl = () => {
       if (operation == "increment") incrementClock();
       else decrementClock();
       lastUpdateTime.current = currentTime;
-      console.log("Clock incremented:", clock + 1);
     } else {
-      console.log(
-        `Cannot ${operation} clock. Wait for`,
-        minTimeDifference - (currentTime - lastUpdateTime.current),
-        "ms"
-      );
+      // console.log(
+      //   `Cannot ${operation} clock. Wait for`,
+      //   minTimeDifference - (currentTime - lastUpdateTime.current),
+      //   "ms"
+      // );
     }
   };
   return (
@@ -55,7 +54,7 @@ const ClockControl = () => {
           margin: "0 10px",
           border: "solid 2px #90caf9",
           padding: "0 10px",
-          height: "40%",
+          height: "100%",
           borderRadius: "7px",
           backgroundColor: "#192126",
         }}

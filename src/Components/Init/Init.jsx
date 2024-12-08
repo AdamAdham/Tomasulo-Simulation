@@ -16,12 +16,23 @@ import { IntegerRegistersContext } from "../Common/Context/IntegerRegistersConte
 import { FloatingRegistersContext } from "../Common/Context/FloatingRegistersContext";
 import { initializeCache, initializeResources } from "../Common/Functions";
 import { MemoryContext } from "../Common/Context/MemoryContext";
+import InitMemory from "./InitMemory";
 
 const Init = () => {
   const navigate = useNavigate();
   const { instructions } = useContext(InstructionsContext);
-  const { cacheSize, blockSize, cache, setCache } = useContext(CacheContext);
-  const { memory } = useContext(MemoryContext);
+  const {
+    cache,
+    setCache,
+    cachePenalty,
+    cacheSize,
+    blockSize,
+    validity,
+    setValidity,
+    tags,
+    setTags,
+  } = useContext(CacheContext);
+  const { memory, memorySize } = useContext(MemoryContext);
   const {
     // initializeResources,
     loadBufferSize,
@@ -47,8 +58,13 @@ const Init = () => {
 
   // const [instructions, setInstructions] = useState([]);
   const startSimulation = () => {
-    const updatedCache = initializeCache(cacheSize, blockSize);
+    const [updatedCache, tagsTemp, validityTemp] = initializeCache(
+      cacheSize,
+      blockSize
+    );
     setCache(updatedCache);
+    setValidity(validityTemp);
+    setTags(tagsTemp);
 
     const updatedResources = initializeResources(
       loadBufferSize,
@@ -77,6 +93,10 @@ const Init = () => {
         floatingRegisters,
         cache: updatedCache,
         memory,
+        validity: validityTemp,
+        tags: tagsTemp,
+        cacheSize,
+        blockSize,
         loadBuffer: loadBufferUpdated,
         storeBuffer: storeBufferUpdated,
         addSubRes: addSubResUpdated,
@@ -93,6 +113,10 @@ const Init = () => {
         floatingRegisters,
         cache: updatedCache,
         memory,
+        validity: validityTemp,
+        tags: tagsTemp,
+        cacheSize,
+        blockSize,
         loadBuffer: loadBufferUpdated,
         storeBuffer: storeBufferUpdated,
         addSubRes: addSubResUpdated,
@@ -115,20 +139,17 @@ const Init = () => {
         Initialize Simulation
         <Divider />
       </h1>
-
       <InstructionSelection />
       <DisplayInstructions />
       <Divider />
-
       <h1>Initialize Memory</h1>
-      <div>Still questions</div>
+      <InitMemory />
       <Divider />
       <h1>Initialize Registers</h1>
       <RegistersInit />
       <Divider />
       <h1>Initialize Statistics</h1>
       <InitStatistics />
-
       <Button
         variant="contained"
         style={{ margin: "40px", fontSize: "25px", borderRadius: "10px" }}

@@ -74,6 +74,9 @@ const InitStatistics = () => {
     if (value > memorySize) {
       value = memorySize;
     }
+    if (value < 8) {
+      value = 8;
+    }
     setCacheSize(value);
   };
 
@@ -84,9 +87,9 @@ const InitStatistics = () => {
 
   const handleBlockSize = (e) => {
     let value = powerOfTwo(e.target.value);
-    if (value < 64) {
+    if (value < 8) {
       // cannot have block size less than 64 for double precision load/stores
-      value = 64;
+      value = 8;
     }
     if (value > cacheSize) {
       // Cannot have block size greater than cache size

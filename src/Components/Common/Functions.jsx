@@ -1,3 +1,4 @@
+import { logDOM } from "@testing-library/react";
 import {
   integerAluOpcodes,
   floatingAluOpcodes,
@@ -9,6 +10,13 @@ import {
   mulDivFloatingOpcodes,
   addSubFloatingOpcodes,
 } from "../../Constants/Constants";
+
+import {
+  read,
+  updateMemoryRead,
+  write,
+  updateMemoryWrite,
+} from "./Context/MemoryAccess";
 
 export const isNumberLessThan = (value, max) => {
   let temp = parseInt(value, 10); // Convert to integer
@@ -42,9 +50,7 @@ export const powerOfTwo = (value) => {
   return temp - lowerPower < higherPower - temp ? lowerPower : higherPower;
 };
 
-export const initializeCache = () => {
-  let cacheSize = 128;
-  let blockSize = 32;
+export const initializeCache = (cacheSize, blockSize) => {
   let sets = cacheSize / blockSize;
   let cacheTemp = [];
   let block = [];
@@ -60,7 +66,7 @@ export const initializeCache = () => {
     tagsTemp.push("empty");
     validityTemp.push(0);
   }
-  
+
   return [cacheTemp, tagsTemp, validityTemp];
 };
 
@@ -295,22 +301,14 @@ const getCurrentInstruction = (instructions) => {
     branchOpcodes.includes(previousInstruction?.opcode)
   ) {
     // There is a previous instruction and the previous instruction is a branch
-    console.log("previousInstruction", previousInstruction);
 
     if (!previousInstruction.writeResult) return null; // If did not write result stall since no branch prediction
     // If here then it has written the result
     const label = instructions[mostRecentIssueIndex].toLabel;
-    console.log(
-      "instructions[mostRecentIssueIndex].toLabel",
-      instructions[mostRecentIssueIndex].toLabel
-    );
-
     instructions.forEach((instr, index) => {
       if (instr.label === label) {
         currentInstructionIndex = index;
         currentInstruction = instr;
-        console.log("found label");
-
         return; // Exit forEach
       }
     });
@@ -540,7 +538,6 @@ export const issue = (
   const rowTag = resourceRes.rowTag;
 
   // Update Register file with row tag and get row details
-  console.log("currentInstructionIndex issue", currentInstructionIndex);
 
   const updateRegsValuesGetRowRes = updateRegsValuesGetRow(
     instruction,
@@ -668,7 +665,6 @@ export const issueQueue = (
 
   // If has come to this point then the instruction has successfully issued so just update the instruction to issue at the current clock cycle
   // Why reasign SOME values, because if this instruction has already gone through its
-  console.log("currentInstructionIndex", currentInstructionIndex);
 
   instructions.push({
     ...cleanInstruction(instructionsInitial[currentInstructionIndex]),
@@ -690,7 +686,18 @@ export const issueQueue = (
 };
 
 // TODO A in buffer/res
-const startExecStation = (instructions, clock, station) => {
+const startExecStation = (
+  instructions,
+  clock,
+  cache,
+  memory,
+  validityArray,
+  tagsArray,
+  memorySize,
+  cacheSize,
+  blockSize,
+  station
+) => {
   station?.forEach((row) => {
     if (row.busy == 1 && !instructions[row.instructionIndex].execStart) {
       // The row is actually occupied and has not yet started executing
@@ -700,15 +707,125 @@ const startExecStation = (instructions, clock, station) => {
           ...instructions[row.instructionIndex],
           execStart: clock,
         };
+        if (loadStoreOpcodes.includes(row.opcode)) {
+          if (instructions[row.instructionIndex].effective) {
+            row.A = instructions[row.instructionIndex].effective;
+          } else {
+            row.A = instructions[row.instructionIndex].immediate + row.Vj;
+          }
+
+          if (loadOpcodes.includes(row.opcode)) {
+            const [
+              hit,
+              dataRead,
+              indexDecimal,
+              tagBin,
+              locationDecimal,
+              offsetDecimal,
+              block,
+            ] = read(
+              cache,
+              memory,
+              validityArray,
+              tagsArray,
+              row.A,
+              memorySize,
+              cacheSize,
+              blockSize
+            );
+            row.memoryCacheDetails = {
+              hit,
+              dataRead,
+              indexDecimal,
+              tagBin,
+              locationDecimal,
+              offsetDecimal,
+              block,
+            };
+
+            let loadData = dataRead;
+            let loadData32Lower = getLowest32Bits(loadData);
+            let loadData32Upper = getUpper32Bits(loadData);
+
+            switch (row.opcode) {
+              case "LW":
+                instructions[row.instructionIndex].writeValue = loadData32Lower;
+                break;
+              case "LD":
+                instructions[row.instructionIndex].writeValue = loadData;
+                break;
+              case "L.D":
+                instructions[row.instructionIndex].writeValue = loadData;
+                break;
+              case "L.S":
+                instructions[row.instructionIndex].writeValue = loadData32Upper;
+                break;
+            }
+          } else {
+            // Store opcodes
+
+            const storeData = row.Vj;
+            const storeData32Lower = getLowest32Bits(row.Vj);
+            const storeData32Upper = getUpper32Bits(row.Vj);
+            let writeData = null;
+            switch (row.opcode) {
+              case "SW":
+                writeData = storeData32Lower;
+                break;
+              case "SD":
+                writeData = storeData;
+                break;
+              case "S.D":
+                writeData = storeData;
+                break;
+              case "S.S":
+                writeData = storeData32Upper;
+                break;
+            }
+
+            const [
+              hit,
+              dataWrite,
+              indexDecimal,
+              tagBin,
+              locationDecimal,
+              offsetDecimal,
+              block,
+            ] = write(
+              cache,
+              memory,
+              validityArray,
+              tagsArray,
+              row.A,
+              writeData,
+              memorySize,
+              cacheSize,
+              blockSize
+            );
+            row.memoryCacheDetails = {
+              hit,
+              dataWrite,
+              indexDecimal,
+              tagBin,
+              locationDecimal,
+              offsetDecimal,
+              block,
+            };
+          }
+        }
       }
     }
   });
 
-  return instructions;
+  return { instructions, station };
 };
 
 const getLowest32Bits = (value) => {
   return value & 0xffffffff; // Extract the lowest 32 bits
+};
+
+const getUpper32Bits = (value) => {
+  return value & 0xffffffff00000000; // Extract the lowest 32 bits
 };
 
 const computeValues = (row, opcode) => {
@@ -768,8 +885,13 @@ const computeValues = (row, opcode) => {
     case "BEQ":
       result = VjDouble == VkDouble;
       break;
-    case "L":
-      // TODO
+    case "LW":
+      break;
+    case "LD":
+      break;
+    case "L.S":
+      break;
+    case "LW":
       break;
     case "S":
     // TODO
@@ -780,7 +902,21 @@ const computeValues = (row, opcode) => {
   return result;
 };
 
-const endExecStation = (instructions, clock, station, latency, opcodePart) => {
+const endExecStation = (
+  cache,
+  memory,
+  validityArray,
+  tagsArray,
+  memorySize,
+  cacheSize,
+  blockSize,
+  cachePenalty,
+  instructions,
+  clock,
+  station,
+  latency,
+  opcodePart
+) => {
   station?.forEach((row) => {
     if (
       row.busy == 1 &&
@@ -792,28 +928,75 @@ const endExecStation = (instructions, clock, station, latency, opcodePart) => {
       // started executing &&
       // opcode contains the snippet given
       // And did not already set execEnd
-      const clockDifference =
+
+      let clockDifference =
         clock - instructions[row.instructionIndex].execStart;
-      if (clockDifference == latency) {
+      let delay = latency;
+      if (loadStoreOpcodes.includes(row.opcode)) {
+        if (!row.memoryCacheDetails.hit) {
+          // Miss
+          delay = cachePenalty;
+        }
+      }
+      if (clockDifference == delay) {
         // Execute
         const value = computeValues(
           row,
           instructions[row.instructionIndex].opcode
         );
         instructions[row.instructionIndex].execEnd = clock;
-        if (value || opcodePart == "BEQ" || opcodePart == "BNE")
+        if (
+          (value || opcodePart == "BEQ" || opcodePart == "BNE") &&
+          !loadStoreOpcodes.includes(instructions[row.instructionIndex].opcode)
+        ) {
+          // The write value has already been decided in the startExec for loadStore ops
           instructions[row.instructionIndex].writeValue = value;
+        }
+        if (loadOpcodes.includes(instructions[row.instructionIndex].opcode)) {
+          const tagBin = row.memoryCacheDetails.tagBin;
+          const indexDecimal = row.memoryCacheDetails.indexDecimal;
+          const block = row.memoryCacheDetails.block;
+
+          [cache, validityArray, tagsArray] = updateMemoryRead(
+            cache,
+            validityArray,
+            tagsArray,
+            tagBin,
+            indexDecimal,
+            block
+          ); // Ask Hany block keda sah?
+          console.log(cache);
+        } else if (
+          storeOpcodes.includes(instructions[row.instructionIndex].opcode)
+        ) {
+        }
       }
     }
   });
-  return instructions;
+  return {
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
+    instructions,
+  };
 };
 
 // EXECUTE FUNCTIONS
 const handleExecute = (
   instructions,
   clock,
-
+  cache,
+  memory,
+  validityArray,
+  tagsArray,
+  memorySize,
+  cacheSize,
+  blockSize,
   // Resources
   loadBuffer,
   storeBuffer,
@@ -837,103 +1020,342 @@ const handleExecute = (
 ) => {
   // EXEC Start
   // Loop through all resources check if any of them can start
-  instructions = startExecStation(
+
+  ({ instructions, station: loadBuffer } = startExecStation(
     instructions,
     clock,
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
     loadBuffer,
-    cachePenalty,
     cachePenalty
-  );
-  instructions = startExecStation(
+  ));
+
+  ({ instructions, station: storeBuffer } = startExecStation(
     instructions,
     clock,
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
     storeBuffer,
     cachePenalty
-  );
-  instructions = startExecStation(instructions, clock, addSubRes, cachePenalty);
-  instructions = startExecStation(instructions, clock, mulDivRes, cachePenalty);
-  instructions = startExecStation(
+  ));
+  ({ instructions, station: addSubRes } = startExecStation(
     instructions,
     clock,
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    addSubRes,
+    cachePenalty
+  ));
+
+  ({ instructions, station: mulDivRes } = startExecStation(
+    instructions,
+    clock,
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    mulDivRes,
+    cachePenalty
+  ));
+
+  ({ instructions, station: integerRes } = startExecStation(
+    instructions,
+    clock,
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
     integerRes,
     cachePenalty
-  );
+  ));
 
   // EXEC End
-  instructions = endExecStation(
+
+  ({
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
+    instructions,
+  } = endExecStation(
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
     instructions,
     clock,
     loadBuffer,
     latencyLoad,
     "L"
-  );
-  instructions = endExecStation(
+  ));
+  ({
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
+    instructions,
+  } = endExecStation(
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
     instructions,
     clock,
     storeBuffer,
     latencyStore,
     "S"
-  );
-  instructions = endExecStation(
+  ));
+  ({
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
+    instructions,
+  } = endExecStation(
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
     instructions,
     clock,
     addSubRes,
     latencyAdd,
     "ADD"
-  );
-  instructions = endExecStation(
+  ));
+  ({
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
+    instructions,
+  } = endExecStation(
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
     instructions,
     clock,
     addSubRes,
     latencySub,
     "SUB"
-  );
-  instructions = endExecStation(
+  ));
+  ({
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
+    instructions,
+  } = endExecStation(
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
     instructions,
     clock,
     mulDivRes,
     latencyMultiply,
     "MUL"
-  );
-  instructions = endExecStation(
+  ));
+  ({
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
+    instructions,
+  } = endExecStation(
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
     instructions,
     clock,
     mulDivRes,
     latencyDivide,
     "DIV"
-  );
-  instructions = endExecStation(
+  ));
+  ({
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
+    instructions,
+  } = endExecStation(
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
     instructions,
     clock,
     integerRes,
     latencyIntegerAdd,
     "ADD"
-  );
-  instructions = endExecStation(
+  ));
+  ({
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
+    instructions,
+  } = endExecStation(
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
     instructions,
     clock,
     integerRes,
     latencyIntegerSub,
     "SUB"
-  );
+  ));
 
-  instructions = endExecStation(
+  ({
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
+    instructions,
+  } = endExecStation(
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
     instructions,
     clock,
     integerRes,
     latencyBranch,
     "BEQ"
-  );
+  ));
 
-  instructions = endExecStation(
+  ({
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
+    instructions,
+  } = endExecStation(
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    cachePenalty,
     instructions,
     clock,
     integerRes,
     latencyBranch,
     "BNE"
-  );
-
-  return instructions;
+  ));
+  return {
+    cache,
+    memory,
+    validity: validityArray,
+    tags: tagsArray,
+    instructions,
+    loadBuffer,
+    storeBuffer,
+    addSubRes,
+    mulDivRes,
+    integerRes,
+  };
 };
 
 const writeResult = (
@@ -1043,6 +1465,11 @@ export const simulateNextClock = (
   floatingRegisters,
   cache,
   memory,
+  validityArray,
+  tagsArray,
+  memorySize,
+  cacheSize,
+  blockSize,
   loadBuffer,
   storeBuffer,
   addSubRes,
@@ -1075,6 +1502,42 @@ export const simulateNextClock = (
   let addSubResTemp = addSubRes;
   let mulDivResTemp = mulDivRes;
   let integerResTemp = integerRes;
+  let validityTemp = validityArray;
+  let tagsTemp = tagsArray;
+
+  // console.log("simnextclock", {
+  //   instructions,
+  //   integerRegisters,
+  //   floatingRegisters,
+  //   cache,
+  //   memory,
+  //   validityArray,
+  //   tagsArray,
+  //   memorySize,
+  //   cacheSize,
+  //   blockSize,
+  //   loadBuffer,
+  //   storeBuffer,
+  //   addSubRes,
+  //   mulDivRes,
+  //   integerRes,
+
+  //   // Instruction Latencies
+  //   latencyStore,
+  //   latencyLoad,
+  //   latencyAdd,
+  //   latencySub,
+  //   latencyMultiply,
+  //   latencyDivide,
+  //   latencyIntegerAdd,
+  //   latencyIntegerSub,
+  //   latencyBranch,
+
+  //   clock,
+
+  //   // Resource Latencies
+  //   cachePenalty,
+  // });
 
   // console.dir(JSON.stringify(instructions, null, 2));
   // console.dir(JSON.stringify(integerRegisters, null, 2));
@@ -1084,29 +1547,54 @@ export const simulateNextClock = (
   // console.dir(JSON.stringify(addSubRes, null, 2));
   // console.dir(JSON.stringify(mulDivRes, null, 2));
   // console.dir(JSON.stringify(integerRes, null, 2));
+  let executeResult = null;
+  if (instructionsTemp.length > 0) {
+    executeResult = handleExecute(
+      instructionsTemp,
+      clock,
+      // Resources
+      cache,
+      memory,
+      validityArray,
+      tagsArray,
+      memorySize,
+      cacheSize,
+      blockSize,
+      loadBufferTemp,
+      storeBufferTemp,
+      addSubResTemp,
+      mulDivResTemp,
+      integerResTemp,
+      // Instruction Latencies
+      latencyStore,
+      latencyLoad,
+      latencyAdd,
+      latencySub,
+      latencyMultiply,
+      latencyDivide,
+      latencyIntegerAdd,
+      latencyIntegerSub,
+      latencyBranch,
+      // Resource Latencies
+      cachePenalty
+    );
+  }
+  // console.log("executeResult", executeResult);
 
-  instructionsTemp = handleExecute(
-    instructionsTemp,
-    clock,
-    // Resources
-    loadBufferTemp,
-    storeBufferTemp,
-    addSubResTemp,
-    mulDivResTemp,
-    integerResTemp,
-    // Instruction Latencies
-    latencyStore,
-    latencyLoad,
-    latencyAdd,
-    latencySub,
-    latencyMultiply,
-    latencyDivide,
-    latencyIntegerAdd,
-    latencyIntegerSub,
-    latencyBranch,
-    // Resource Latencies
-    cachePenalty
-  );
+  if (executeResult) {
+    ({
+      instructions: instructionsTemp,
+      cache: cacheTemp,
+      memory: memoryTemp,
+      validity: validityTemp,
+      tags: tagsTemp,
+      loadBuffer: loadBufferTemp,
+      storeBuffer: storeBufferTemp,
+      addSubRes: addSubResTemp,
+      mulDivRes: mulDivResTemp,
+      integerRes: integerResTemp,
+    } = executeResult);
+  }
 
   // ISSUE
   const afterIssue = issue(
@@ -1135,6 +1623,8 @@ export const simulateNextClock = (
     } = afterIssue);
   }
 
+  // console.log("afterIssue", afterIssue);
+
   // Done it after execute because if not, instruction can start executing the same time
   // Done it after issue because not to issue a waiting instruction in same cycle as previous instruction making resource full writes the result
   // the provider instruction has written result on bus
@@ -1160,6 +1650,7 @@ export const simulateNextClock = (
     integerResTemp,
     clock
   ));
+
   // exec
   // wr
   return {
@@ -1168,6 +1659,8 @@ export const simulateNextClock = (
     floatingRegisters: floatingRegistersTemp,
     cache: cacheTemp,
     memory: memoryTemp,
+    validity: validityTemp,
+    tags: tagsTemp,
     loadBuffer: loadBufferTemp,
     storeBuffer: storeBufferTemp,
     addSubRes: addSubResTemp,
@@ -1183,6 +1676,11 @@ export const simulateNextClockQueue = (
   floatingRegisters,
   cache,
   memory,
+  validityArray,
+  tagsArray,
+  memorySize,
+  cacheSize,
+  blockSize,
   loadBuffer,
   storeBuffer,
   addSubRes,
@@ -1216,20 +1714,22 @@ export const simulateNextClockQueue = (
   let addSubResTemp = addSubRes;
   let mulDivResTemp = mulDivRes;
   let integerResTemp = integerRes;
-  // console.dir(JSON.stringify(instructions, null, 2));
-  // console.dir(JSON.stringify(integerRegisters, null, 2));
-  // console.dir(JSON.stringify(floatingRegisters, null, 2));
-  // console.dir(JSON.stringify(loadBuffer, null, 2));
-  // console.dir(JSON.stringify(storeBuffer, null, 2));
-  // console.dir(JSON.stringify(addSubRes, null, 2));
-  // console.dir(JSON.stringify(mulDivRes, null, 2));
-  // console.dir(JSON.stringify(integerRes, null, 2));
+  let validityTemp = validityArray;
+  let tagsTemp = tagsArray;
 
+  let executeResult = null;
   if (instructionsTemp.length > 0) {
-    instructionsTemp = handleExecute(
+    executeResult = handleExecute(
       instructionsTemp,
       clock,
       // Resources
+      cache,
+      memory,
+      validityArray,
+      tagsArray,
+      memorySize,
+      cacheSize,
+      blockSize,
       loadBufferTemp,
       storeBufferTemp,
       addSubResTemp,
@@ -1249,6 +1749,22 @@ export const simulateNextClockQueue = (
       cachePenalty
     );
   }
+  if (executeResult) {
+    ({
+      instructions: instructionsTemp,
+      cache: cacheTemp,
+      memory: memoryTemp,
+      validity: validityTemp,
+      tags: tagsTemp,
+      loadBuffer: loadBufferTemp,
+      storeBuffer: storeBufferTemp,
+      addSubRes: addSubResTemp,
+      mulDivRes: mulDivResTemp,
+      integerRes: integerResTemp,
+    } = executeResult);
+  }
+
+  console.log(loadBufferTemp);
 
   // ISSUE
   const afterIssue = issueQueue(
@@ -1277,6 +1793,7 @@ export const simulateNextClockQueue = (
       integerRes: integerResTemp,
     } = afterIssue);
   }
+
   // Done it after execute because if not, instruction can start executing the same time
   // Done it after issue because not to issue a waiting instruction in same cycle as previous instruction making resource full writes the result
   // the provider instruction has written result on bus
@@ -1310,6 +1827,8 @@ export const simulateNextClockQueue = (
     floatingRegisters: floatingRegistersTemp,
     cache: cacheTemp,
     memory: memoryTemp,
+    validity: validityTemp,
+    tags: tagsTemp,
     loadBuffer: loadBufferTemp,
     storeBuffer: storeBufferTemp,
     addSubRes: addSubResTemp,

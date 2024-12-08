@@ -15,7 +15,7 @@ const columns = [
         dataIndex: ["block", "blockOffset"], // For objects
         key: "blockOffset",
         render: (_, record) =>
-          record.block.map((item) => (
+          record.block?.map((item) => (
             <div
               style={{
                 borderBottom: "1px solid #303030",
@@ -32,7 +32,7 @@ const columns = [
         dataIndex: ["block", "value"], // For objects
         key: "value",
         render: (_, record) =>
-          record.block.map((item) => (
+          record.block?.map((item) => (
             <div
               style={{
                 borderBottom: "1px solid #303030",

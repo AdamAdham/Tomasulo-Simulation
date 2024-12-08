@@ -15,6 +15,8 @@ const columns = [
 const DisplayMemory = ({ memory }) => {
   const [memoryTable, setMemoryTable] = useState(memory);
   useEffect(() => {
+    console.log(memory);
+
     setMemoryTable(
       memory.map((memoryRow, index) => {
         return { address: index, value: memoryRow };
