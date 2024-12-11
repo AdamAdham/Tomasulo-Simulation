@@ -314,6 +314,7 @@ const Simulation = () => {
         // Resource Latencies
         cachePenalty
       );
+      console.log(nextSimulationQueue);
 
       // Set new values to be displayed
       if (!nextSimulation) return; // Error occured not sure TODO
@@ -397,6 +398,19 @@ const Simulation = () => {
   //   setContext(initialSimulation);
   //   historyInstructions = [initialSimulation];
   // };
+  console.log(instructionQueue);
+
+  const goBack = () => {
+    setClock(0);
+    const initialSimulation = JSON.parse(
+      localStorage.getItem("initialSimulation")
+    );
+    initialSimulation.instructionQueue = [];
+    setContext(initialSimulation);
+    historyInstructions = [initialSimulation];
+    historyQueue = [initialSimulation];
+    navigate("/");
+  };
 
   useEffect(() => {
     setClock(0);
@@ -427,9 +441,7 @@ const Simulation = () => {
           width: "40px",
           backgroundColor: "#171c1f",
         }}
-        onClick={() => {
-          navigate("/");
-        }}
+        onClick={goBack}
       >
         <KeyboardArrowLeft style={{ fontSize: "30px" }} />
       </IconButton>
