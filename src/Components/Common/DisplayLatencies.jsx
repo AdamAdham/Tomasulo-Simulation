@@ -1,6 +1,7 @@
 import React, { useContext } from "react";
 import { TextField } from "@mui/material";
 import { InstructionLatencyContext } from "./Context/InstructionLatencyContext";
+import { CacheContext } from "./Context/CacheContext";
 
 const DisplayLatencies = () => {
   const {
@@ -14,6 +15,8 @@ const DisplayLatencies = () => {
     latencyIntegerSub,
     latencyBranch,
   } = useContext(InstructionLatencyContext);
+
+  const { cachePenalty, cacheLatency } = useContext(CacheContext);
   return (
     <div style={{ marginBottom: "30px", marginTop: "-30px" }}>
       <h2 style={{ marginBottom: "30px" }}>Instruction Latencies</h2>
@@ -126,6 +129,32 @@ const DisplayLatencies = () => {
         label="Branch Latency"
         variant="outlined"
         value={latencyBranch}
+        slotProps={{
+          input: {
+            readOnly: true,
+          },
+        }}
+        style={{ width: "120px", marginLeft: "20px" }}
+      />
+
+      <TextField
+        id="latency-branch"
+        label="Cache Latency"
+        variant="outlined"
+        value={cacheLatency}
+        slotProps={{
+          input: {
+            readOnly: true,
+          },
+        }}
+        style={{ width: "120px", marginLeft: "20px" }}
+      />
+
+      <TextField
+        id="penalty-branch"
+        label="Cache Penalty"
+        variant="outlined"
+        value={cachePenalty}
         slotProps={{
           input: {
             readOnly: true,

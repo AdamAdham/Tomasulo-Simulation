@@ -183,8 +183,8 @@ const InstructionSelection = () => {
         setErrorMessage("Missing input, please enter all the fields");
       }
     } else if (opcode === "BEQ" || opcode === "BNE") {
-      if (R1 && R2 && toLabel) {
-        const instruction = { opcode, R1, R2, toLabel, label };
+      if (R2 && R3 && toLabel) {
+        const instruction = { opcode, R2, R3, toLabel, label };
         setInstructions((prev) => [...prev, instruction]); // Corrected to use array
       } else {
         setOpenFeedback(true);
@@ -355,15 +355,15 @@ const InstructionSelection = () => {
         {opcode == "BEQ" || opcode == "BNE" ? (
           <div>
             <DropDown
-              value={R1}
-              label={"REG1"}
-              onChange={handleR1Change}
-              dropDownItems={integerRegisters}
-            />
-            <DropDown
               value={R2}
               label={"REG2"}
               onChange={handleR2Change}
+              dropDownItems={integerRegisters}
+            />
+            <DropDown
+              value={R3}
+              label={"REG3"}
+              onChange={handleR3Change}
               dropDownItems={integerRegisters}
             />
             <TextField

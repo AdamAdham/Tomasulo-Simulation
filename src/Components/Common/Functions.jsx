@@ -263,8 +263,11 @@ const updateRegsValuesGetRow = (
     row = { ...row, immediate };
   }
 
+  console.log(instruction);
+
   // Update register file to listen to certain tag (after the getting because not use their in Q)
   if (reg1) {
+    // If branch operation no register updates will be done
     reg1Type = reg1[0]; // get first letter of the name (F|R)
     if (reg1Type && reg1Type == "F") {
       floatingRegisters[reg1] = { ...floatingRegisters[reg1], Qi: rowTag };
@@ -298,9 +301,12 @@ const getCurrentInstruction = (instructions) => {
 
   let currentInstruction = null;
   let currentInstructionIndex = null;
+  console.log(previousInstruction);
+
   if (
     previousInstruction &&
-    branchOpcodes.includes(previousInstruction?.opcode)
+    branchOpcodes.includes(previousInstruction?.opcode) &&
+    previousInstruction?.value !== false // branch
   ) {
     // There is a previous instruction and the previous instruction is a branch
 
@@ -314,19 +320,24 @@ const getCurrentInstruction = (instructions) => {
         return; // Exit forEach
       }
     });
-    if (!currentInstruction) return null; // There is a branch to an invalid label
-  } else {
-    // No previous insruction OR previous instruction is not a branch
-    // So next instruction is a the next one in the queue
-    if (mostRecentIssueIndex + 1 >= instructions.length) {
-      // Previous instruction not a branch and the most recent issued is the last one in the instructions
-      // So the issues have finished
-      instructionsIssuesFinished = true;
-      return null; // We do not do anything
+    if (!currentInstruction) {
+      // There is a branch to an invalid label
+      return null;
+    } else if (currentInstruction && previousInstruction?.writeValue) {
+      // Label is valid and the branch condition is satisfied
+      return currentInstructionIndex;
     }
-    currentInstructionIndex = mostRecentIssueIndex + 1;
-    currentInstruction = instructions[mostRecentIssueIndex + 1];
   }
+  // No previous insruction OR previous instruction is not a branch
+  // So next instruction is a the next one in the queue
+  if (mostRecentIssueIndex + 1 >= instructions.length) {
+    // Previous instruction not a branch and the most recent issued is the last one in the instructions
+    // So the issues have finished
+    instructionsIssuesFinished = true;
+    return null; // We do not do anything
+  }
+  currentInstructionIndex = mostRecentIssueIndex + 1;
+  currentInstruction = instructions[mostRecentIssueIndex + 1];
   return currentInstructionIndex;
 };
 
@@ -946,6 +957,8 @@ const endExecStation = (
           row,
           instructions[row.instructionIndex].opcode
         );
+        console.log(value);
+
         instructions[row.instructionIndex].execEnd = clock;
         if (
           (value || opcodePart == "BEQ" || opcodePart == "BNE") &&
