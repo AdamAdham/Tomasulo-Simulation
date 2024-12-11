@@ -148,7 +148,7 @@ const InstructionSelection = () => {
 
   const addInstruction = () => {
     if (integerAluOpcodes.includes(opcode)) {
-      if (R1 && R2 && immediate) {
+      if (R1 && R2 && (immediate || immediate === 0)) {
         const instruction = { R1, R2, immediate, label, opcode };
         setInstructions((prev) => [...prev, instruction]); // Corrected to use array
       } else {
@@ -164,10 +164,10 @@ const InstructionSelection = () => {
         setErrorMessage("Missing input, please enter all the fields");
       }
     } else if (loadStoreOpcodes.includes(opcode)) {
-      if (R1 && R2 && immediate) {
+      if (R1 && R2 && (immediate || immediate === 0)) {
         const instruction = { R1, R2, immediate, label, opcode };
         setInstructions((prev) => [...prev, instruction]); // Corrected to use array
-      } else if (R1 && effective) {
+      } else if (R1 && (effective || effective === 0)) {
         const instruction = { R1, effective, label, opcode };
         setInstructions((prev) => [...prev, instruction]); // Corrected to use array
       } else {

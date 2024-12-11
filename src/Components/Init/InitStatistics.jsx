@@ -87,10 +87,10 @@ const InitStatistics = () => {
 
   const handleBlockSize = (e) => {
     let value = powerOfTwo(e.target.value);
-    if (value < 8) {
-      // cannot have block size less than 64 for double precision load/stores
-      value = 8;
-    }
+    // if (value < 8) {
+    //   // cannot have block size less than 64 for double precision load/stores
+    //   value = 8;
+    // }
     if (value > cacheSize) {
       // Cannot have block size greater than cache size
       value = cacheSize;

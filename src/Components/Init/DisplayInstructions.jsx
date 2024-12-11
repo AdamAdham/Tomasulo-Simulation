@@ -25,10 +25,6 @@ const columns = [
     dataIndex: "R3",
   },
   {
-    title: "Register 3",
-    dataIndex: "R3",
-  },
-  {
     title: "Immediate",
     dataIndex: "immediate",
   },
