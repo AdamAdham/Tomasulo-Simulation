@@ -51,6 +51,8 @@ export const powerOfTwo = (value) => {
 };
 
 export const initializeCache = (cacheSize, blockSize) => {
+  console.log("init block sise", blockSize);
+
   let sets = cacheSize / blockSize;
   let cacheTemp = [];
   let block = [];
@@ -969,6 +971,22 @@ const endExecStation = (
         } else if (
           storeOpcodes.includes(instructions[row.instructionIndex].opcode)
         ) {
+          const tagBin = row.memoryCacheDetails.tagBin;
+          const locationDecimal = row.memoryCacheDetails.locationDecimal;
+          const block = row.memoryCacheDetails.block;
+          const offsetDecimal = row.memoryCacheDetails.offsetDecimal;
+          const dataWrite = row.memoryCacheDetails.dataWrite;
+          updateMemoryWrite(
+            cache,
+            memory,
+            validityArray,
+            tagsArray,
+            tagBin,
+            locationDecimal,
+            offsetDecimal,
+            block,
+            dataWrite
+          );
         }
       }
     }
