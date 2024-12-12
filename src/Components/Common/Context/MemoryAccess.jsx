@@ -57,9 +57,19 @@ return outbot;
 
 };
 
-export function originalRead(cacheArray, memoryArray, validityArray, tagsArray, location, memorySize, cacheSize, blockSize, typeIs32){
-  
 
+// originalRead heya el function el bene3melaha call men bara lama yeb2a feeh load instruction w betraga3 e7na hit wala miss w el ma3loomat el me7tagenha 3ashan n update el cache w el memory
+
+export function originalRead(cacheArray, memoryArray, validityArray, tagsArray, location, memorySize, cacheSize, blockSize, typeIs32){
+  // cacheArray dah 2d array feeh el outer size beta3o howa 3adad el blocks aw el sets beto3 el cache
+  // w el inner size beta3o howa 3adad el offsets el fel block aw el set
+  // memoryArray dah 1d array
+  // validityArray dah 1d array kol element feeh ya2ema 0 ya2ema 1 beyshawer 3ala el cache block el mo3ayana ye2ool law etkatab feeha abl keda wala la2 
+   // tagsArray dah 1d array of strings kol string bet2ool el cache block fel wa2t el 7aly feeha anhy tag
+   // yeb2a size el validity array w el tags array howa nafs el outer size beta3 el cache array
+   // location deeh betkoon bel decimal bet2ool el starting index beta3 el data el matlooba
+   // memorySize el da5la ka parameter deeh bel bytes, heya w el cacheSize w el blockSize
+   // typeIs32 deeh law true yeb2a el data el 3ayez y loadha 32 bits gheir keda 64 bits
        if(typeIs32){
         
         
@@ -79,8 +89,19 @@ export function originalRead(cacheArray, memoryArray, validityArray, tagsArray, 
            let offsetDecimal = [firstTemp[5], secondTemp[5], thirdTemp[5], fourthTemp[5]];
           let blockInhand = [firstTemp[6], secondTemp[6], thirdTemp[6], fourthTemp[6]];
               return [hit, dataRead, indexDecimal, tagBin, locationDecimal, offsetDecimal, blockInhand];
-          
-
+               // law hit b true yeb2a kol el data el howa kan 3ayezha men el memory mawgooda 3ady fel cache
+               // law hit b false yeb2a at least one address men el data el matlooba mesh mawgood fel cache
+               // dataRead betkoon array of strings w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits)
+                // dataRead beykoon feeh el data el matlooba men el memory
+                // indexDecimal beykoon array of integers w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // indexDecimal beykoon el index fel cache ya3ni anhy set aw block el mawgood feeha kol byte men el data el matlooba
+                // tagBin beykoon array of strings w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // tagBin beykoon array of binary strings w kol string bey2ool el tag bits beta3 kol byte men el data el matlooba
+                // locationDecimal beykoon array of integers w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // locationDecimal beykoon el index fel memory el mawgood feeha kol byte men el data el matlooba 
+                // offsetDecimal beykoon array of integers w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // offsetDecimal beykoon el offset fel cache block el mo3ayana el mawgood feeha kol byte men el data el matlooba
+                // blockInhand beykoon 2d array w kol element fel outer array beykoon block(el howa bardo array) bey2ool l kol data byte men el data el matlooba hane7tag anhy block men el memory w dah 3ashan law el data el matlooba met2asema 3ala aktar men cache block
        }
        else{
 
@@ -105,22 +126,41 @@ export function originalRead(cacheArray, memoryArray, validityArray, tagsArray, 
           let offsetDecimal = [firstTemp[5], secondTemp[5], thirdTemp[5], fourthTemp[5], fifthTemp[5], sixthTemp[5], seventhTemp[5], eighthTemp[5]];
           let blockInhand = [firstTemp[6], secondTemp[6], thirdTemp[6], fourthTemp[6], fifthTemp[6], sixthTemp[6], seventhTemp[6], eighthTemp[6]];
               return [hit, dataRead, indexDecimal, tagBin, locationDecimal, offsetDecimal, blockInhand];
-
+              // law hit b true yeb2a kol el data el howa kan 3ayezha men el memory mawgooda 3ady fel cache
+               // law hit b false yeb2a at least one address men el data el matlooba mesh mawgood fel cache
+               // dataRead betkoon array of strings w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits)
+                // dataRead beykoon feeh el data el matlooba men el memory
+                // indexDecimal beykoon array of integers w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // indexDecimal beykoon el index fel cache ya3ni anhy set aw block el mawgood feeha kol byte men el data el matlooba
+                // tagBin beykoon array of strings w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // tagBin beykoon array of binary strings w kol string bey2ool el tag bits beta3 kol byte men el data el matlooba
+                // locationDecimal beykoon array of integers w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // locationDecimal beykoon el index fel memory el mawgood feeha kol byte men el data el matlooba 
+                // offsetDecimal beykoon array of integers w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // offsetDecimal beykoon el offset fel cache block el mo3ayana el mawgood feeha kol byte men el data el matlooba
+                // blockInhand beykoon 2d array w kol element fel outer array beykoon block(el howa bardo array) bey2ool l kol data byte men el data el matlooba hane7tag anhy block men el memory w dah 3ashan law el data el matlooba met2asema 3ala aktar men cache block
+         
        }
 }
 
 
 
-
+// lama benkoon 3ayzeen ne3mel load ben call el function dee awalan 3ashan ne3raf hit wala miss w law miss el ma3loomat el me7tagenha 3ashan n update el cache w el memory
 export function read(cacheArray, memoryArray, validityArray, tagsArray, location, memorySize, cacheSize, blockSize ){
   
-  // memorySize = 4096;
- 
-   //cacheSize = 96;
-  // blockSize = 32;
-  //location = "000001101100";
+  // cacheArray dah 2d array feeh el outer size beta3o howa 3adad el blocks aw el sets beto3 el cache
+  // w el inner size beta3o howa 3adad el offsets el fel block aw el set
+  // memoryArray dah 1d array
+  // validityArray dah 1d array kol element feeh ya2ema 0 ya2ema 1 beyshawer 3ala el cache block el mo3ayana ye2ool law etkatab feeha abl keda wala la2 
+   // tagsArray dah 1d array of strings kol string bet2ool el cache block fel wa2t el 7aly feeha anhy tag
+   // yeb2a size el validity array w el tags array howa nafs el outer size beta3 el cache array
+   // location deeh betkoon bel decimal bet2ool el starting index beta3 el data el matlooba
+   // memorySize el da5la ka parameter deeh bel bytes, heya w el cacheSize w el blockSize
+   
   let hit = false;
   let executeMissCode = 0;
+  // executeMissCode beteb2a b 1 lama n indicate en feeh miss(hane3mel execute le code mo3ayan) f hane7tag negeeb hagat men el memory 
+  // addressBits homa 3adad el bits beto3 el memory location
   let addressBits = Math.log2(memorySize);
 
   let sets = cacheSize / blockSize;
@@ -153,6 +193,7 @@ export function read(cacheArray, memoryArray, validityArray, tagsArray, location
   let locationDecimal = binaryToDecimal(location);
   
   let missLocationStartBin = replaceLastBitsWithZeros(location, bitsCountOffsets); 
+  // missLocationStartBin aw missLocationStartDecimal betkoon el starting location el hangeeb meno men el memory law feeh miss
   let missLocationStartDecimal = binaryToDecimal(missLocationStartBin);
 
 
@@ -161,9 +202,10 @@ export function read(cacheArray, memoryArray, validityArray, tagsArray, location
       let blockInhand = cacheArray[indexDecimal];
       let dataRead = blockInhand[offsetDecimal];
       hit = true;
-      //return [hitOrMiss, dataRead, locationDecimal];
+      
       return [hit, dataRead, indexDecimal, tagBin, locationDecimal, offsetDecimal, blockInhand];
-             
+             // roo7 lel comments el ta7t el return beta3et originalRead bas el far2 en kol element fel return deeh mesh beykoon array 3ashan el info deeh te5os 1 data byte men el data el matlooba 
+             // blockInhand hena betkoon 1d array mesh 2d array zay fo2
   }
   else{
       executeMissCode = 1;
@@ -199,7 +241,7 @@ export function read(cacheArray, memoryArray, validityArray, tagsArray, location
 
 
 
-
+// el function deeh bene3mel call lama benkoon 3ayzeen n update el cache ba3d ma ne3mel read l data mo3ayana
 export function updateMemoryRead (cacheArrayReal, validityArrayReal, tagsArrayReal, tagBin, indexDecimal, blockReal, typeIs32){
   let cacheArray = deepCopy2d(cacheArrayReal);
   // let cacheArray = JSON.parse(JSON.stringify(cacheArrayReal));
@@ -239,8 +281,17 @@ else {
    
  };
 
-
+// originalWrite heya el function el bene3melaha call men bara lama yeb2a feeh store instruction w betraga3 e7na hit wala miss w el ma3loomat el me7tagenha 3ashan n update el cache w el memory
  export function originalWrite(cacheArray, memoryArray, validityArray, tagsArray, location, dataWrite, memorySize, cacheSize, blockSize, typeIs32){
+  // cacheArray dah 2d array feeh el outer size beta3o howa 3adad el blocks aw el sets beto3 el cache
+  // w el inner size beta3o howa 3adad el offsets el fel block aw el set
+  // memoryArray dah 1d array
+  // validityArray dah 1d array kol element feeh ya2ema 0 ya2ema 1 beyshawer 3ala el cache block el mo3ayana ye2ool law etkatab feeha abl keda wala la2 
+   // tagsArray dah 1d array of strings kol string bet2ool el cache block fel wa2t el 7aly feeha anhy tag
+   // yeb2a size el validity array w el tags array howa nafs el outer size beta3 el cache array
+   // location deeh betkoon bel decimal bet2ool el starting index beta3 el data el matloob yetketeb feeha
+   // memorySize el da5la ka parameter deeh bel bytes, heya w el cacheSize w el blockSize
+    // typeIs32 deeh law true yeb2a el data el 3ayez y storeha 32 bits gheir keda 64 bits
   if(typeIs32){
         
         
@@ -260,6 +311,19 @@ else {
    let offsetDecimal = [firstTemp[5], secondTemp[5], thirdTemp[5], fourthTemp[5]];
    let blockInhand = [firstTemp[6], secondTemp[6], thirdTemp[6], fourthTemp[6]];
       return [hit, dataWrite, indexDecimal, tagBin, locationDecimal, offsetDecimal, blockInhand];
+       // law hit b true yeb2a kol el data addresses el howa kan 3ayez yekteb feeha fel memory mawgooda 3ady fel cache
+               // law hit b false yeb2a at least one address men el data el matloob tetketeb mesh mawgood fel cache
+               // dataWrite betkoon array of strings w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits)
+                // dataWrite beykoon feeh el data el matloob tetketeb fel memory
+                // indexDecimal beykoon array of integers w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // indexDecimal beykoon el index fel cache ya3ni anhy set aw block el mawgood feeha kol byte men el data el matloob tetketeb
+                // tagBin beykoon array of strings w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // tagBin beykoon array of binary strings w kol string bey2ool el tag bits beta3 kol byte men el data el matloob tetketeb
+                // locationDecimal beykoon array of integers w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // locationDecimal beykoon el index fel memory el mawgood feeha kol byte men el data el matloob tetketeb 
+                // offsetDecimal beykoon array of integers w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // offsetDecimal beykoon el offset fel cache block el mo3ayana el mawgood feeha kol byte men el data el matloob tetketeb
+                // blockInhand beykoon 2d array w kol element fel outer array beykoon block(el howa bardo array) bey2ool l kol data byte men el data el matlooba hane7tag anhy block men el memory w dah 3ashan law el data el matloob tetketeb met2asema 3ala aktar men cache block
   
 
 }
@@ -284,6 +348,19 @@ else {
    let offsetDecimal = [firstTemp[5], secondTemp[5], thirdTemp[5], fourthTemp[5], fifthTemp[5], sixthTemp[5], seventhTemp[5], eighthTemp[5]];
    let blockInhand = [firstTemp[6], secondTemp[6], thirdTemp[6], fourthTemp[6], fifthTemp[6], sixthTemp[6], seventhTemp[6], eighthTemp[6]];
       return [hit, dataWrite, indexDecimal, tagBin, locationDecimal, offsetDecimal, blockInhand];
+      // law hit b true yeb2a kol el data addresses el howa kan 3ayez yekteb feeha fel memory mawgooda 3ady fel cache
+               // law hit b false yeb2a at least one address men el data el matloob tetketeb mesh mawgood fel cache
+               // dataWrite betkoon array of strings w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits)
+                // dataWrite beykoon feeh el data el matloob tetketeb fel memory
+                // indexDecimal beykoon array of integers w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // indexDecimal beykoon el index fel cache ya3ni anhy set aw block el mawgood feeha kol byte men el data el matloob tetketeb
+                // tagBin beykoon array of strings w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // tagBin beykoon array of binary strings w kol string bey2ool el tag bits beta3 kol byte men el data el matloob tetketeb
+                // locationDecimal beykoon array of integers w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // locationDecimal beykoon el index fel memory el mawgood feeha kol byte men el data el matloob tetketeb 
+                // offsetDecimal beykoon array of integers w el length beta3 el array ya2ema 4 ya2ema 8 (4 law el data 32 bits) (8 law el data 64 bits) 
+                // offsetDecimal beykoon el offset fel cache block el mo3ayana el mawgood feeha kol byte men el data el matloob tetketeb
+                // blockInhand beykoon 2d array w kol element fel outer array beykoon block(el howa bardo array) bey2ool l kol data byte men el data el matlooba hane7tag anhy block men el memory w dah 3ashan law el data el matloob tetketeb met2asema 3ala aktar men cache block
 
   }
  }
@@ -291,14 +368,22 @@ else {
 
 
 
-
+// lama benkoon 3ayzeen ne3mel store ben call el function dee awalan 3ashan ne3raf hit wala miss w law miss el ma3loomat el me7tagenha 3ashan n update el cache w el memory
  export function write (cacheArray, memoryArray, validityArray, tagsArray, location, dataWrite, memorySize, cacheSize, blockSize ){
-  // memorySize = 4096;
-  // cacheSize = 96;
-   //blockSize = 32;
-  //location = "000001101100";
+   // cacheArray dah 2d array feeh el outer size beta3o howa 3adad el blocks aw el sets beto3 el cache
+  // w el inner size beta3o howa 3adad el offsets el fel block aw el set
+  // memoryArray dah 1d array
+  // validityArray dah 1d array kol element feeh ya2ema 0 ya2ema 1 beyshawer 3ala el cache block el mo3ayana ye2ool law etkatab feeha abl keda wala la2 
+   // tagsArray dah 1d array of strings kol string bet2ool el cache block fel wa2t el 7aly feeha anhy tag
+   // yeb2a size el validity array w el tags array howa nafs el outer size beta3 el cache array
+   // location deeh betkoon bel decimal bet2ool el starting index beta3 el data el matloob yetketeb feeha
+   // memorySize el da5la ka parameter deeh bel bytes, heya w el cacheSize w el blockSize
+  
   let hit = false;
+  // executeMissCode beteb2a b 1 lama n indicate en feeh miss(hane3mel execute le code mo3ayan) f hane7tag negeeb hagat men el memory 
   let executeMissCode = 0;
+
+  // addressBits homa 3adad el bits beto3 el memory location
   let addressBits = Math.log2(memorySize);
 
   let sets = cacheSize / blockSize;
@@ -329,6 +414,7 @@ else {
  let locationDecimal = binaryToDecimal(location);
  
  let missLocationStartBin = replaceLastBitsWithZeros(location, bitsCountOffsets); 
+ // missLocationStartBin aw missLocationStartDecimal betkoon el starting location el hangeeb meno men el memory law feeh miss
  let missLocationStartDecimal = binaryToDecimal(missLocationStartBin);
 
 
@@ -379,7 +465,7 @@ if(executeMissCode == 1){
 
 
 
-
+// el function deeh bene3mel call lama benkoon 3ayzeen n update el cache w el memory 3ashan nsama3 el write lel data el mo3ayana
 export function updateMemoryWrite (cacheArrayReal, memoryArrayReal, validityArrayReal, tagsArrayReal, tagBin, locationDecimal, indexDecimal, offsetDecimal, blockReal, dataWrite, typeIs32 ){
   let cacheArray = deepCopy2d(cacheArrayReal);
 
@@ -389,6 +475,7 @@ let tagsArray = deepCopy1d(tagsArrayReal);
 let memoryArray = deepCopy1d(memoryArrayReal);
 let block = deepCopy2d(blockReal);
 let tagBinNew = deepCopy1d(tagBin);
+
 let locationDecimalNew = deepCopy1d(locationDecimal);
 let indexDecimalNew = deepCopy1d(indexDecimal);
 let offsetDecimalNew = deepCopy1d(offsetDecimal);
