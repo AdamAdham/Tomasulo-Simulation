@@ -58,7 +58,7 @@ export const initializeCache = (cacheSize, blockSize) => {
   let block = [];
   let tagsTemp = [];
   let validityTemp = [];
-  for (let i = 0; i < blockSize / 8; i++) {
+  for (let i = 0; i < blockSize ; i++) {
     // create block of size BlockSize/8
     block.push(0);
   }
