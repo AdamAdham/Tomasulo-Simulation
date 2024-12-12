@@ -113,6 +113,7 @@ export function originalRead(cacheArray, memoryArray, validityArray, tagsArray, 
 
 
 export function read(cacheArray, memoryArray, validityArray, tagsArray, location, memorySize, cacheSize, blockSize ){
+  
   // memorySize = 4096;
  
    //cacheSize = 96;
@@ -391,6 +392,7 @@ let tagBinNew = deepCopy1d(tagBin);
 let locationDecimalNew = deepCopy1d(locationDecimal);
 let indexDecimalNew = deepCopy1d(indexDecimal);
 let offsetDecimalNew = deepCopy1d(offsetDecimal);
+let dataWriteNew = deepCopy1d(dataWrite);
 
 if(typeIs32){
   for(let i =0 ; i<4 ; i++){
@@ -398,10 +400,13 @@ if(typeIs32){
     validityArray[indexDecimalNew[i]] = 1;
     cacheArray[indexDecimalNew[i]] = block[i];
     
-    cacheArray[indexDecimalNew[i]][offsetDecimalNew[i]] = dataWrite[i];
     
-    memoryArray[locationDecimalNew[i]] = dataWrite[i];
 
+  }
+  for(let i =0 ; i<4; i++){
+    cacheArray[indexDecimalNew[i]][offsetDecimalNew[i]] = dataWriteNew[i];
+    
+    memoryArray[locationDecimalNew[i]] = dataWriteNew[i];
   }
  
 
@@ -413,10 +418,13 @@ else{
     validityArray[indexDecimalNew[i]] = 1;
     cacheArray[indexDecimalNew[i]] = block[i];
     
-    cacheArray[indexDecimalNew[i]][offsetDecimalNew[i]] = dataWrite[i];
     
-    memoryArray[locationDecimalNew[i]] = dataWrite[i];
 
+  }
+  for(let i =0 ; i<8; i++){
+    cacheArray[indexDecimalNew[i]][offsetDecimalNew[i]] = dataWriteNew[i];
+    
+    memoryArray[locationDecimalNew[i]] = dataWriteNew[i];
   }
 
 }
