@@ -284,6 +284,58 @@ const updateRegsValuesGetRow = (
   return { row, integerRegisters, floatingRegisters };
 };
 
+const getCurrentInstructionQueue = (instructionsQueue, instructionsInitial) => {
+  // Loop through instructions to check the last issued one
+  let mostRecentIssueIndex = -1;
+  if (instructionsQueue.length !== 0) {
+    mostRecentIssueIndex =
+      instructionsQueue[instructionsQueue.length - 1].instructionIndexInit;
+  }
+  let previousInstruction = null;
+  if (mostRecentIssueIndex >= 0) {
+    previousInstruction = instructionsQueue[mostRecentIssueIndex];
+  }
+
+  let currentInstruction = null;
+  let currentInstructionIndex = null;
+
+  if (
+    previousInstruction &&
+    branchOpcodes.includes(previousInstruction?.opcode) &&
+    previousInstruction?.value !== false // branch
+  ) {
+    // There is a previous instruction and the previous instruction is a branch
+
+    if (!previousInstruction.writeResult) return null; // If did not write result stall since no branch prediction
+    // If here then it has written the result
+    const label = instructionsQueue[mostRecentIssueIndex].toLabel;
+    instructionsQueue.forEach((instr, index) => {
+      if (instr.label === label) {
+        currentInstructionIndex = index;
+        currentInstruction = instr;
+        return; // Exit forEach
+      }
+    });
+    if (!currentInstruction) {
+      // There is a branch to an invalid label
+      return null;
+    } else if (currentInstruction && previousInstruction?.writeValue) {
+      // Label is valid and the branch condition is satisfied
+      return currentInstructionIndex;
+    }
+  }
+  // No previous insruction OR previous instruction is not a branch
+  // So next instruction is a the next one in the queue
+  if (mostRecentIssueIndex + 1 >= instructionsInitial.length) {
+    // Previous instruction not a branch and the most recent issued is the last one in the instructions
+    // So the issues have finished
+    return null; // We do not do anything
+  }
+  currentInstructionIndex = mostRecentIssueIndex + 1;
+  currentInstruction = instructionsQueue[mostRecentIssueIndex + 1];
+  return currentInstructionIndex;
+};
+
 const getCurrentInstruction = (instructions) => {
   let instructionsIssuesFinished = false;
 
@@ -612,7 +664,11 @@ export const issueQueue = (
   integerRes,
   clock
 ) => {
-  const currentInstructionIndex = getCurrentInstruction(instructionsInitial);
+  const currentInstructionIndex = getCurrentInstructionQueue(
+    instructions,
+    instructionsInitial
+  );
+  console.log(currentInstructionIndex);
 
   if (currentInstructionIndex != 0 && !currentInstructionIndex) {
     console.log(
@@ -687,6 +743,7 @@ export const issueQueue = (
     ...cleanInstruction(instructionsInitial[currentInstructionIndex]),
     issue: clock,
     rowTag,
+    instructionIndexInit: currentInstructionIndex,
   });
 
   // Return updated values of register file, instructions and buffers/Reservation stations
@@ -1041,7 +1098,7 @@ const endExecStation = (
       // console.log(row);
 
       if (loadStoreOpcodes.includes(row.opcode)) {
-        if (!row?.memoryCacheDetails?.hit) {
+        if (!row.memoryCacheDetails.hit) {
           // Miss
           delay = Math.max(latency, cachePenalty);
         }

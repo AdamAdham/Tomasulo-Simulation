@@ -258,39 +258,36 @@ const Simulation = () => {
       // console.log(historyInstructions);
 
       if (historyInstructions[clock - 1]) {
-        nextSimulation = simulateNextClock(
-          structuredClone(historyInstructions[clock - 1].instructions),
-          structuredClone(historyInstructions[clock - 1].integerRegisters),
-          structuredClone(historyInstructions[clock - 1].floatingRegisters),
-          structuredClone(historyInstructions[clock - 1].cache),
-          structuredClone(historyInstructions[clock - 1].memory),
-          structuredClone(historyInstructions[clock - 1].validity),
-          structuredClone(historyInstructions[clock - 1].tags),
-          memorySize,
-          cacheSize,
-          blockSize,
-          structuredClone(historyInstructions[clock - 1].loadBuffer),
-          structuredClone(historyInstructions[clock - 1].storeBuffer),
-          structuredClone(historyInstructions[clock - 1].addSubRes),
-          structuredClone(historyInstructions[clock - 1].mulDivRes),
-          structuredClone(historyInstructions[clock - 1].integerRes),
-
-          // Instruction Latencies
-          latencyStore,
-          latencyLoad,
-          latencyAdd,
-          latencySub,
-          latencyMultiply,
-          latencyDivide,
-          latencyIntegerAdd,
-          latencyIntegerSub,
-          latencyBranch,
-
-          clock,
-
-          // Resource Latencies
-          cachePenalty
-        );
+        // nextSimulation = simulateNextClock(
+        //   structuredClone(historyInstructions[clock - 1].instructions),
+        //   structuredClone(historyInstructions[clock - 1].integerRegisters),
+        //   structuredClone(historyInstructions[clock - 1].floatingRegisters),
+        //   structuredClone(historyInstructions[clock - 1].cache),
+        //   structuredClone(historyInstructions[clock - 1].memory),
+        //   structuredClone(historyInstructions[clock - 1].validity),
+        //   structuredClone(historyInstructions[clock - 1].tags),
+        //   memorySize,
+        //   cacheSize,
+        //   blockSize,
+        //   structuredClone(historyInstructions[clock - 1].loadBuffer),
+        //   structuredClone(historyInstructions[clock - 1].storeBuffer),
+        //   structuredClone(historyInstructions[clock - 1].addSubRes),
+        //   structuredClone(historyInstructions[clock - 1].mulDivRes),
+        //   structuredClone(historyInstructions[clock - 1].integerRes),
+        //   // Instruction Latencies
+        //   latencyStore,
+        //   latencyLoad,
+        //   latencyAdd,
+        //   latencySub,
+        //   latencyMultiply,
+        //   latencyDivide,
+        //   latencyIntegerAdd,
+        //   latencyIntegerSub,
+        //   latencyBranch,
+        //   clock,
+        //   // Resource Latencies
+        //   cachePenalty
+        // );
       }
 
       // console.log("instructs b4", {
@@ -327,6 +324,7 @@ const Simulation = () => {
       //   // Resource Latencies
       //   cachePenalty,
       // });
+
       const nextSimulationQueue = simulateNextClockQueue(
         structuredClone(instructionQueue),
         structuredClone(instructions),
@@ -361,16 +359,20 @@ const Simulation = () => {
         // Resource Latencies
         cachePenalty
       );
+      // console.log(nextSimulationQueue);
+
       // Set new values to be displayed
-      if (!nextSimulation) return; // Error occured not sure TODO
+      if (!nextSimulationQueue) return; // Error occured not sure TODO
       // Set new values so that when clk is the same again we just get the value directly with no simulation
-      setInstructionQueue(nextSimulationQueue.instructions);
+      // console.log(nextSimulationQueue);
+
+      setInstructionQueue(nextSimulationQueue.instructionsQueue);
       setContext(nextSimulationQueue);
       historyQueue.push(nextSimulationQueue);
       // console.log(historyQueue);
 
-      setInstructions(nextSimulation.instructions);
-      historyInstructions.push(nextSimulation);
+      // setInstructions(nextSimulation.instructions);
+      // historyInstructions.push(nextSimulation);
       // console.log(historyInstructions);
 
       // setSimulation((prev) => {
