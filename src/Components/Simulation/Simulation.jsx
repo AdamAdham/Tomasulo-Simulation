@@ -203,6 +203,8 @@ const Simulation = () => {
   ]);
 
   const setContext = (simulationInstance) => {
+    console.log(simulationInstance.validity);
+
     setInstructionQueue([...simulationInstance.instructionQueue]);
     setIntegerRegisters({ ...simulationInstance.integerRegisters });
     setFloatingRegisters({ ...simulationInstance.floatingRegisters });

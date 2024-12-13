@@ -262,7 +262,7 @@ const updateRegsValuesGetRow = (
     } else {
       row = { ...row, Vk: register3Obj.value };
     }
-  } else if (immediate) {
+  } else if (immediate || immediate === 0) {
     row = { ...row, immediate };
   }
 
@@ -734,7 +734,10 @@ const startExecStation = (
           execStart: clock,
         };
         if (loadStoreOpcodes.includes(row.opcode)) {
-          if (instructions[row.instructionIndex].effective) {
+          if (
+            instructions[row.instructionIndex].effective ||
+            instructions[row.instructionIndex].effective === 0
+          ) {
             row.A = instructions[row.instructionIndex].effective;
           } else {
             if (loadOpcodes.includes(row.opcode)) {
@@ -745,6 +748,18 @@ const startExecStation = (
           }
 
           if (loadOpcodes.includes(row.opcode)) {
+            console.log(
+              cache,
+              memory,
+              validityArray,
+              tagsArray,
+              row.A,
+              memorySize,
+              cacheSize,
+              blockSize,
+              ["LW", "L.S"].includes(row.opcode) ? true : false
+            );
+
             const [
               hit,
               dataRead,
