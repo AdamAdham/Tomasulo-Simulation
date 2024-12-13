@@ -48,7 +48,10 @@ const Simulation = () => {
   const {
     cache,
     setCache,
+    cacheLatency,
+    setCacheLatency,
     cachePenalty,
+    setCachePenalty,
     cacheSize,
     blockSize,
     validity,
@@ -60,6 +63,17 @@ const Simulation = () => {
 
   const [instructionQueue, setInstructionQueue] = useState([]);
   const {
+    loadBufferSize,
+    setLoadBufferSize,
+    storeBufferSize,
+    setStoreBufferSize,
+    addSubResSize,
+    setAddSubResSize,
+    mulDivResSize,
+    setMulDivResSize,
+    integerResSize,
+    setIntegerResSize,
+
     loadBuffer,
     setLoadBuffer,
     storeBuffer,
@@ -74,14 +88,23 @@ const Simulation = () => {
 
   const {
     latencyStore,
+    setLatencyStore,
     latencyLoad,
+    setLatencyLoad,
     latencyAdd,
+    setLatencyAdd,
     latencySub,
+    setLatencySub,
     latencyMultiply,
+    setLatencyMultiply,
     latencyDivide,
+    setLatencyDivide,
     latencyIntegerAdd,
+    setLatencyIntegerAdd,
     latencyIntegerSub,
+    setLatencyIntegerSub,
     latencyBranch,
+    setLatencyBranch,
   } = useContext(InstructionLatencyContext);
   const { memory, setMemory } = useContext(MemoryContext);
   const [tabItems, setTabItems] = useState([
@@ -193,6 +216,28 @@ const Simulation = () => {
     setMulDivRes([...simulationInstance.mulDivRes]);
     setIntegerRes([...simulationInstance.integerRes]);
   };
+
+  const setStatistics = (simulationInstance) => {
+    setCacheLatency(simulationInstance?.cacheLatency);
+    setCachePenalty(simulationInstance?.cachePenalty);
+
+    setLoadBufferSize(simulationInstance?.loadBufferSize);
+    setStoreBufferSize(simulationInstance?.storeBufferSize);
+    setAddSubResSize(simulationInstance?.addSubResSize);
+    setMulDivResSize(simulationInstance?.mulDivResSize);
+    setIntegerResSize(simulationInstance?.integerResSize);
+
+    setLatencyStore(simulationInstance?.latencyStore);
+    setLatencyLoad(simulationInstance?.latencyLoad);
+    setLatencyAdd(simulationInstance?.latencyAdd);
+    setLatencySub(simulationInstance?.latencySub);
+    setLatencyMultiply(simulationInstance?.latencyMultiply);
+    setLatencyDivide(simulationInstance?.latencyDivide);
+    setLatencyIntegerAdd(simulationInstance?.latencyIntegerAdd);
+    setLatencyIntegerSub(simulationInstance?.latencyIntegerSub);
+    setLatencyBranch(simulationInstance?.latencyBranch);
+  };
+
   useEffect(() => {
     if (historyInstructions[clock]) {
       setInstructions(historyInstructions[clock]?.instructions);
@@ -314,8 +359,6 @@ const Simulation = () => {
         // Resource Latencies
         cachePenalty
       );
-      console.log(nextSimulationQueue);
-
       // Set new values to be displayed
       if (!nextSimulation) return; // Error occured not sure TODO
       // Set new values so that when clk is the same again we just get the value directly with no simulation
@@ -398,7 +441,6 @@ const Simulation = () => {
   //   setContext(initialSimulation);
   //   historyInstructions = [initialSimulation];
   // };
-  console.log(instructionQueue);
 
   const goBack = () => {
     setClock(0);
@@ -419,6 +461,7 @@ const Simulation = () => {
     );
     initialSimulation.instructionQueue = [];
     setContext(initialSimulation);
+    setStatistics(initialSimulation);
     historyInstructions = [initialSimulation];
     historyQueue = [initialSimulation];
   }, []);

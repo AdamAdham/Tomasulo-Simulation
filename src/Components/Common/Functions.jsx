@@ -16,6 +16,9 @@ import {
   updateMemoryRead,
   write,
   updateMemoryWrite,
+  originalRead,
+  binaryToDecimal,
+  originalWrite,
 } from "./Context/MemoryAccess";
 
 export const isNumberLessThan = (value, max) => {
@@ -58,9 +61,9 @@ export const initializeCache = (cacheSize, blockSize) => {
   let block = [];
   let tagsTemp = [];
   let validityTemp = [];
-  for (let i = 0; i < blockSize ; i++) {
+  for (let i = 0; i < blockSize; i++) {
     // create block of size BlockSize/8
-    block.push(0);
+    block.push("00000000");
   }
   for (let i = 0; i < sets; i++) {
     // create block of size BlockSize/8
@@ -263,8 +266,6 @@ const updateRegsValuesGetRow = (
     row = { ...row, immediate };
   }
 
-  console.log(instruction);
-
   // Update register file to listen to certain tag (after the getting because not use their in Q)
   if (reg1) {
     // If branch operation no register updates will be done
@@ -274,6 +275,10 @@ const updateRegsValuesGetRow = (
     } else {
       integerRegisters[reg1] = { ...integerRegisters[reg1], Qi: rowTag };
     }
+  }
+
+  if (loadOpcodes.includes(instruction.opcode)) {
+    row.Vk = instruction.immediate;
   }
 
   return { row, integerRegisters, floatingRegisters };
@@ -301,7 +306,6 @@ const getCurrentInstruction = (instructions) => {
 
   let currentInstruction = null;
   let currentInstructionIndex = null;
-  console.log(previousInstruction);
 
   if (
     previousInstruction &&
@@ -698,6 +702,15 @@ export const issueQueue = (
   };
 };
 
+function splitBinaryString(binaryString) {
+  let chunks = [];
+  for (let i = binaryString.length; i > 0; i -= 8) {
+    // Why from end, because lowest sig figures first
+    chunks.push(binaryString.slice(i - 8, i));
+  }
+  return chunks;
+}
+
 // TODO A in buffer/res
 const startExecStation = (
   instructions,
@@ -724,7 +737,11 @@ const startExecStation = (
           if (instructions[row.instructionIndex].effective) {
             row.A = instructions[row.instructionIndex].effective;
           } else {
-            row.A = instructions[row.instructionIndex].immediate + row.Vj;
+            if (loadOpcodes.includes(row.opcode)) {
+              row.A = instructions[row.instructionIndex].immediate + row.Vj;
+            } else {
+              row.A = instructions[row.instructionIndex].immediate + row.Vk;
+            }
           }
 
           if (loadOpcodes.includes(row.opcode)) {
@@ -736,7 +753,7 @@ const startExecStation = (
               locationDecimal,
               offsetDecimal,
               block,
-            ] = read(
+            ] = originalRead(
               cache,
               memory,
               validityArray,
@@ -744,7 +761,8 @@ const startExecStation = (
               row.A,
               memorySize,
               cacheSize,
-              blockSize
+              blockSize,
+              ["LW", "L.S"].includes(row.opcode) ? true : false
             );
             row.memoryCacheDetails = {
               hit,
@@ -756,7 +774,19 @@ const startExecStation = (
               block,
             };
 
-            let loadData = dataRead;
+            let readValue = "";
+
+            if (dataRead) {
+              for (let i = 0; i < dataRead.length; i++) {
+                readValue = dataRead[i] + readValue; // added to start of because the last array element is the msb so added to start
+              }
+            }
+            console.log(readValue);
+
+            readValue = binaryToDecimal(readValue);
+            console.log(readValue);
+
+            let loadData = readValue;
             let loadData32Lower = getLowest32Bits(loadData);
             let loadData32Upper = getUpper32Bits(loadData);
 
@@ -796,6 +826,8 @@ const startExecStation = (
                 break;
             }
 
+            let storeBinary = writeData.toString(2).padStart(64, "0");
+            storeBinary = splitBinaryString(storeBinary);
             const [
               hit,
               dataWrite,
@@ -804,17 +836,29 @@ const startExecStation = (
               locationDecimal,
               offsetDecimal,
               block,
-            ] = write(
+            ] = originalWrite(
               cache,
               memory,
               validityArray,
               tagsArray,
               row.A,
-              writeData,
+              storeBinary,
               memorySize,
               cacheSize,
-              blockSize
+              blockSize,
+              [("SD", "S.D")].includes(row.opcode) ? true : false
             );
+
+            console.log({
+              hit,
+              dataWrite,
+              indexDecimal,
+              tagBin,
+              locationDecimal,
+              offsetDecimal,
+              block,
+            });
+
             row.memoryCacheDetails = {
               hit,
               dataWrite,
@@ -980,7 +1024,6 @@ const endExecStation = (
             indexDecimal,
             block
           ); // Ask Hany block keda sah?
-          console.log(cache);
         } else if (
           storeOpcodes.includes(instructions[row.instructionIndex].opcode)
         ) {
@@ -989,16 +1032,20 @@ const endExecStation = (
           const block = row.memoryCacheDetails.block;
           const offsetDecimal = row.memoryCacheDetails.offsetDecimal;
           const dataWrite = row.memoryCacheDetails.dataWrite;
-          updateMemoryWrite(
+          const indexDecimal = row.memoryCacheDetails.indexDecimal;
+
+          [cache, memory, validityArray, tagsArray] = updateMemoryWrite(
             cache,
             memory,
             validityArray,
             tagsArray,
             tagBin,
             locationDecimal,
+            indexDecimal,
             offsetDecimal,
             block,
-            dataWrite
+            dataWrite,
+            [("SD", "S.D")].includes(row.opcode) ? true : false
           );
         }
       }
@@ -1794,8 +1841,6 @@ export const simulateNextClockQueue = (
       integerRes: integerResTemp,
     } = executeResult);
   }
-
-  console.log(loadBufferTemp);
 
   // ISSUE
   const afterIssue = issueQueue(

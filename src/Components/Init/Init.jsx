@@ -17,6 +17,7 @@ import { FloatingRegistersContext } from "../Common/Context/FloatingRegistersCon
 import { initializeCache, initializeResources } from "../Common/Functions";
 import { MemoryContext } from "../Common/Context/MemoryContext";
 import InitMemory from "./InitMemory";
+import { InstructionLatencyContext } from "../Common/Context/InstructionLatencyContext";
 
 const Init = () => {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ const Init = () => {
   const {
     cache,
     setCache,
+    cacheLatency,
     cachePenalty,
     cacheSize,
     blockSize,
@@ -32,6 +34,19 @@ const Init = () => {
     tags,
     setTags,
   } = useContext(CacheContext);
+
+  const {
+    latencyStore,
+    latencyLoad,
+    latencyAdd,
+    latencySub,
+    latencyMultiply,
+    latencyDivide,
+    latencyIntegerAdd,
+    latencyIntegerSub,
+    latencyBranch,
+  } = useContext(InstructionLatencyContext);
+
   const { memory, memorySize } = useContext(MemoryContext);
   const {
     // initializeResources,
@@ -102,6 +117,25 @@ const Init = () => {
         addSubRes: addSubResUpdated,
         mulDivRes: mulDivResUpdated,
         integerRes: integerResUpdated,
+
+        cacheLatency,
+        cachePenalty,
+
+        loadBufferSize,
+        storeBufferSize,
+        addSubResSize,
+        mulDivResSize,
+        integerResSize,
+
+        latencyStore,
+        latencyLoad,
+        latencyAdd,
+        latencySub,
+        latencyMultiply,
+        latencyDivide,
+        latencyIntegerAdd,
+        latencyIntegerSub,
+        latencyBranch,
       },
     ]);
     localStorage.setItem(
@@ -122,6 +156,25 @@ const Init = () => {
         addSubRes: addSubResUpdated,
         mulDivRes: mulDivResUpdated,
         integerRes: integerResUpdated,
+
+        cacheLatency,
+        cachePenalty,
+
+        loadBufferSize,
+        storeBufferSize,
+        addSubResSize,
+        mulDivResSize,
+        integerResSize,
+
+        latencyStore,
+        latencyLoad,
+        latencyAdd,
+        latencySub,
+        latencyMultiply,
+        latencyDivide,
+        latencyIntegerAdd,
+        latencyIntegerSub,
+        latencyBranch,
       })
     );
     navigate("simulation");
@@ -141,9 +194,9 @@ const Init = () => {
       </h1>
       <InstructionSelection />
       <DisplayInstructions />
-      <Divider />
-      <h1>Initialize Memory</h1>
-      <InitMemory />
+      {/* <Divider />
+          <h1>Initialize Memory</h1>
+          <InitMemory /> */}
       <Divider />
       <h1>Initialize Registers</h1>
       <RegistersInit />

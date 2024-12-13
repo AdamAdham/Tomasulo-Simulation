@@ -30,6 +30,8 @@ import {
   floatingAluOpcodes,
   loadStoreOpcodes,
   opcodeList,
+  loadOpcodes,
+  storeOpcodes,
 } from "../../Constants/Constants";
 
 function TabPanel(props) {
@@ -164,15 +166,28 @@ const InstructionSelection = () => {
         setErrorMessage("Missing input, please enter all the fields");
       }
     } else if (loadStoreOpcodes.includes(opcode)) {
-      if (R1 && R2 && (immediate || immediate === 0)) {
-        const instruction = { R1, R2, immediate, label, opcode };
-        setInstructions((prev) => [...prev, instruction]); // Corrected to use array
-      } else if (R1 && (effective || effective === 0)) {
-        const instruction = { R1, effective, label, opcode };
-        setInstructions((prev) => [...prev, instruction]); // Corrected to use array
+      if (storeOpcodes.includes(opcode)) {
+        if (R2 && R3 && (immediate || immediate === 0)) {
+          const instruction = { R2, R3, immediate, label, opcode };
+          setInstructions((prev) => [...prev, instruction]); // Corrected to use array
+        } else if (R2 && (effective || effective === 0)) {
+          const instruction = { R2, effective, label, opcode };
+          setInstructions((prev) => [...prev, instruction]); // Corrected to use array
+        } else {
+          setOpenFeedback(true);
+          setErrorMessage("Missing input, please enter all the fields");
+        }
       } else {
-        setOpenFeedback(true);
-        setErrorMessage("Missing input, please enter all the fields");
+        if (R1 && R2 && (immediate || immediate === 0)) {
+          const instruction = { R1, R2, immediate, label, opcode };
+          setInstructions((prev) => [...prev, instruction]); // Corrected to use array
+        } else if (R1 && (effective || effective === 0)) {
+          const instruction = { R1, effective, label, opcode };
+          setInstructions((prev) => [...prev, instruction]); // Corrected to use array
+        } else {
+          setOpenFeedback(true);
+          setErrorMessage("Missing input, please enter all the fields");
+        }
       }
     } else if (opcode === "J") {
       if (toLabel) {
@@ -275,8 +290,8 @@ const InstructionSelection = () => {
         ) : null}
 
         {/* Loads and Stores*/}
-        {loadStoreOpcodes.includes(opcode) ? (
-          ["LW", "LD", "SW", "SD"].includes(opcode) ? (
+        {loadOpcodes.includes(opcode) ? (
+          ["LW", "LD"].includes(opcode) ? (
             <DropDown
               value={R1}
               label={"REG1"}
@@ -289,6 +304,24 @@ const InstructionSelection = () => {
               value={R1}
               label={"REG1"}
               onChange={handleR1Change}
+              dropDownItems={floatingRegisters}
+            />
+          )
+        ) : null}
+
+        {storeOpcodes.includes(opcode) ? (
+          ["SW", "SD"].includes(opcode) ? (
+            <DropDown
+              value={R2}
+              label={"REG2"}
+              onChange={handleR2Change}
+              dropDownItems={integerRegisters}
+            />
+          ) : (
+            <DropDown
+              value={R2}
+              label={"REG2"}
+              onChange={handleR2Change}
               dropDownItems={floatingRegisters}
             />
           )
@@ -311,12 +344,21 @@ const InstructionSelection = () => {
               <Tab label="Effective Address" {...a11yProps(1)} />
             </Tabs>
             <TabPanel value={value} index={0}>
-              <DropDown
-                value={R2}
-                label={"REG2"}
-                onChange={handleR2Change}
-                dropDownItems={integerRegisters}
-              />
+              {loadOpcodes.includes(opcode) ? (
+                <DropDown
+                  value={R2}
+                  label={"REG2"}
+                  onChange={handleR2Change}
+                  dropDownItems={integerRegisters}
+                />
+              ) : (
+                <DropDown
+                  value={R3}
+                  label={"REG3"}
+                  onChange={handleR3Change}
+                  dropDownItems={integerRegisters}
+                />
+              )}
 
               <TextField
                 id="outlined-basic"

@@ -6,9 +6,12 @@ import CheckIcon from "@mui/icons-material/Check";
 import { MemoryContext } from "../Common/Context/MemoryContext";
 import DisplayMemory from "../Common/DisplayMemory";
 import { memorySize } from "../../Constants/Constants";
+import { originalWrite } from "../Common/Context/MemoryAccess";
+import { CacheContext } from "../Common/Context/CacheContext";
 
 const InitMemory = () => {
   const { memory, setMemory } = useContext(MemoryContext);
+
   const [memoryAddress, setMemoryAddress] = useState("");
   const [value, setValue] = useState("");
 

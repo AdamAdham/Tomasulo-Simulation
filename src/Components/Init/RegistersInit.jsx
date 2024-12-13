@@ -33,7 +33,6 @@ const RegistersInit = () => {
   const { floatingRegisters, setFloatingRegisters } = useContext(
     FloatingRegistersContext
   );
-  console.log(floatingRegisters);
 
   const [floatingRegister, setFloatingRegister] = useState("F0");
   const [floatingValue, setFloatingValue] = useState(0);
