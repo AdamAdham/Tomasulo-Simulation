@@ -4,10 +4,10 @@ import { memorySize } from "../../../Constants/Constants";
 // Create Context
 export const MemoryContext = createContext();
 const memoryTemp = Array(memorySize)
-  .fill("00000001")
+  .fill("00000000")
   .map((_, index) => {
     let value = index % 256;
-    return value.toString(2).padStart("0");
+    return value.toString(2).padStart(8, "0");
   });
 // Create Provider Component
 export const MemoryProvider = ({ children }) => {

@@ -203,7 +203,7 @@ const Simulation = () => {
   ]);
 
   const setContext = (simulationInstance) => {
-    console.log(simulationInstance.validity);
+    // console.log(simulationInstance.validity);
 
     setInstructionQueue([...simulationInstance.instructionQueue]);
     setIntegerRegisters({ ...simulationInstance.integerRegisters });
@@ -451,6 +451,13 @@ const Simulation = () => {
     );
     initialSimulation.instructionQueue = [];
     setContext(initialSimulation);
+    // const memoryTemp = Array(memorySize)
+    //   .fill("00000000")
+    //   .map((_, index) => {
+    //     let value = index % 256;
+    //     return value.toString(2).padStart(8, "0");
+    //   });
+    // setMemory(memoryTemp);
     historyInstructions = [initialSimulation];
     historyQueue = [initialSimulation];
     navigate("/");

@@ -748,17 +748,17 @@ const startExecStation = (
           }
 
           if (loadOpcodes.includes(row.opcode)) {
-            console.log(
-              cache,
-              memory,
-              validityArray,
-              tagsArray,
-              row.A,
-              memorySize,
-              cacheSize,
-              blockSize,
-              ["LW", "L.S"].includes(row.opcode) ? true : false
-            );
+            // console.log(
+            //   cache,
+            //   memory,
+            //   validityArray,
+            //   tagsArray,
+            //   row.A,
+            //   memorySize,
+            //   cacheSize,
+            //   blockSize,
+            //   ["LW", "L.S"].includes(row.opcode) ? true : false
+            // );
 
             const [
               hit,
@@ -779,6 +779,9 @@ const startExecStation = (
               blockSize,
               ["LW", "L.S"].includes(row.opcode) ? true : false
             );
+
+            // console.log(dataRead);
+
             row.memoryCacheDetails = {
               hit,
               dataRead,
@@ -796,10 +799,9 @@ const startExecStation = (
                 readValue = dataRead[i] + readValue; // added to start of because the last array element is the msb so added to start
               }
             }
-            console.log(readValue);
-
-            readValue = binaryToDecimal(readValue);
-            console.log(readValue);
+            // console.log(readValue);
+            readValue = parseInt(readValue, 2);
+            // console.log(readValue);
 
             let loadData = readValue;
             let loadData32Lower = getLowest32Bits(loadData);
@@ -840,9 +842,25 @@ const startExecStation = (
                 writeData = storeData32Upper;
                 break;
             }
+            writeData = parseInt(writeData);
 
             let storeBinary = writeData.toString(2).padStart(64, "0");
+
             storeBinary = splitBinaryString(storeBinary);
+            // console.log(row);
+            // console.log(instructions[row.instructionIndex]);
+            // console.log({
+            //   cache,
+            //   memory,
+            //   validityArray,
+            //   tagsArray,
+            //   address: row.A,
+            //   storeBinary,
+            //   memorySize,
+            //   cacheSize,
+            //   blockSize,
+            // });
+
             const [
               hit,
               dataWrite,
@@ -861,18 +879,18 @@ const startExecStation = (
               memorySize,
               cacheSize,
               blockSize,
-              [("SD", "S.D")].includes(row.opcode) ? true : false
+              [("SD", "S.D")].includes(row.opcode) ? false : true
             );
 
-            console.log({
-              hit,
-              dataWrite,
-              indexDecimal,
-              tagBin,
-              locationDecimal,
-              offsetDecimal,
-              block,
-            });
+            // console.log({
+            //   hit,
+            //   dataWrite,
+            //   indexDecimal,
+            //   tagBin,
+            //   locationDecimal,
+            //   offsetDecimal,
+            //   block,
+            // });
 
             row.memoryCacheDetails = {
               hit,
@@ -1001,9 +1019,27 @@ const endExecStation = (
       // opcode contains the snippet given
       // And did not already set execEnd
 
+      // console.log("instrs", instructions[row.instructionIndex]);
+
+      // console.log("row.busy", row.busy);
+      // console.log(
+      //   "instructions[row.instructionIndex].execStart",
+      //   instructions[row.instructionIndex].execStart
+      // );
+      // console.log(
+      //   "row.opcode.includes(opcodePart",
+      //   row.opcode.includes(opcodePart)
+      // );
+      // console.log(
+      //   "!instructions[row.instructionIndex].execEnd",
+      //   !instructions[row.instructionIndex].execEnd
+      // );
+
       let clockDifference =
         clock - instructions[row.instructionIndex].execStart;
       let delay = latency;
+      // console.log(row);
+
       if (loadStoreOpcodes.includes(row.opcode)) {
         if (!row.memoryCacheDetails.hit) {
           // Miss
@@ -1016,7 +1052,7 @@ const endExecStation = (
           row,
           instructions[row.instructionIndex].opcode
         );
-        console.log(value);
+        // console.log(value);
 
         instructions[row.instructionIndex].execEnd = clock;
         if (
@@ -1060,7 +1096,7 @@ const endExecStation = (
             offsetDecimal,
             block,
             dataWrite,
-            [("SD", "S.D")].includes(row.opcode) ? true : false
+            [("SD", "S.D")].includes(row.opcode) ? false : true
           );
         }
       }
@@ -1111,6 +1147,9 @@ const handleExecute = (
   // Resource Latencies
   cachePenalty
 ) => {
+  console.log(instructions);
+  console.log({ loadBuffer, storeBuffer, addSubRes, mulDivRes, integerRes });
+
   // EXEC Start
   // Loop through all resources check if any of them can start
 
@@ -1585,6 +1624,8 @@ export const simulateNextClock = (
   // Resource Latencies
   cachePenalty
 ) => {
+  console.log("SIM NEXT");
+
   let instructionsTemp = instructions;
   let integerRegistersTemp = integerRegisters;
   let floatingRegistersTemp = floatingRegisters;
@@ -1796,6 +1837,42 @@ export const simulateNextClockQueue = (
   // Resource Latencies
   cachePenalty
 ) => {
+  console.log("SIM NEXT QUEUEEEEEE");
+
+  console.log({
+    instructions,
+    instructionsInitial,
+    integerRegisters,
+    floatingRegisters,
+    cache,
+    memory,
+    validityArray,
+    tagsArray,
+    memorySize,
+    cacheSize,
+    blockSize,
+    loadBuffer,
+    storeBuffer,
+    addSubRes,
+    mulDivRes,
+    integerRes,
+
+    // Instruction Latencies
+    latencyStore,
+    latencyLoad,
+    latencyAdd,
+    latencySub,
+    latencyMultiply,
+    latencyDivide,
+    latencyIntegerAdd,
+    latencyIntegerSub,
+    latencyBranch,
+
+    clock,
+
+    // Resource Latencies
+    cachePenalty,
+  });
   let instructionsTemp = instructions;
   let instructionsInitialTemp = instructionsInitial;
   let integerRegistersTemp = integerRegisters;

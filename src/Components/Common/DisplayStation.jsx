@@ -17,10 +17,26 @@ const columns = [
   {
     title: "Vj",
     dataIndex: "Vj",
+    render: (text) => (
+      <div
+        className="scrollModern"
+        style={{ maxWidth: "45px", overflow: "auto" }}
+      >
+        {text}
+      </div>
+    ),
   },
   {
     title: "Vk",
     dataIndex: "Vk",
+    render: (text) => (
+      <div
+        className="scrollModern"
+        style={{ maxWidth: "45px", overflow: "auto" }}
+      >
+        {text}
+      </div>
+    ),
   },
   {
     title: "Qj",

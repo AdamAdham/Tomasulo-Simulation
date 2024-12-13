@@ -85,6 +85,7 @@ As stated above we faced a challenge that a word can span through different cach
 - Cache Size and Block Size are powers of 2
 - Cache Size <= Memory Size
 - Block Size <= Cache Size
+- Hit latency <= min(loadLatency,storeLatency) since TA said that the load,store latencies are with the cache latency not added to it.
 
 ### Branch
 
