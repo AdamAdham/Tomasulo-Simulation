@@ -1041,7 +1041,7 @@ const endExecStation = (
       // console.log(row);
 
       if (loadStoreOpcodes.includes(row.opcode)) {
-        if (!row.memoryCacheDetails.hit) {
+        if (!row?.memoryCacheDetails?.hit) {
           // Miss
           delay = Math.max(latency, cachePenalty);
         }
