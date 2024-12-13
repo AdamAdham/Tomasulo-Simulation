@@ -1143,7 +1143,10 @@ const endExecStation = (
 
         instructions[row.instructionIndex].execEnd = clock;
         if (
-          (value || opcodePart == "BEQ" || opcodePart == "BNE") &&
+          (value ||
+            value === 0 ||
+            opcodePart == "BEQ" ||
+            opcodePart == "BNE") &&
           !loadStoreOpcodes.includes(instructions[row.instructionIndex].opcode)
         ) {
           // The write value has already been decided in the startExec for loadStore ops
@@ -1606,6 +1609,8 @@ const writeResult = (
       // Update Res/Buffer
       const tag = instruction.rowTag;
       const value = instruction.writeValue;
+      console.log("value", value);
+
       loadBuffer = refreshResBufferWrite(loadBuffer, tag, value);
       storeBuffer = refreshResBufferWrite(storeBuffer, tag, value);
       addSubRes = refreshResBufferWrite(addSubRes, tag, value);

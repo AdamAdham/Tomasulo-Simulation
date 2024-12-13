@@ -99,3 +99,4 @@ When the 2 or more instruction have finished execution, the first instruction in
 
 1. We tested each stage seperately (issue, start execute, end execute and write result) with edge cases and then after reimplementing the memory we retested loads and stores
 2. We tested the whole flow using the lecture examples with the same statistic and compared the result with the solutions.
+3. All of solved each test case seperately and compared to our simulation. To have all of us solve it to decrease the chance of mistakes
