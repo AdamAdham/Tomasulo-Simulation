@@ -308,8 +308,8 @@ const getCurrentInstructionQueue = (instructionsQueue, instructionsInitial) => {
 
     if (!previousInstruction.writeResult) return null; // If did not write result stall since no branch prediction
     // If here then it has written the result
-    const label = instructionsQueue[mostRecentIssueIndex].toLabel;
-    instructionsQueue.forEach((instr, index) => {
+    const label = instructionsInitial[mostRecentIssueIndex].toLabel;
+    instructionsInitial.forEach((instr, index) => {
       if (instr.label === label) {
         currentInstructionIndex = index;
         currentInstruction = instr;
