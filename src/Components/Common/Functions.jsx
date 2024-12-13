@@ -846,6 +846,8 @@ const startExecStation = (
 
             let storeBinary = writeData.toString(2).padStart(64, "0");
 
+            console.log(storeBinary);
+
             storeBinary = splitBinaryString(storeBinary);
             // console.log(row);
             // console.log(instructions[row.instructionIndex]);
@@ -860,6 +862,8 @@ const startExecStation = (
             //   cacheSize,
             //   blockSize,
             // });
+
+            console.log(storeBinary);
 
             const [
               hit,
@@ -1043,7 +1047,7 @@ const endExecStation = (
       if (loadStoreOpcodes.includes(row.opcode)) {
         if (!row?.memoryCacheDetails?.hit) {
           // Miss
-          delay = Math.max(latency, cachePenalty);
+          delay = latency + cachePenalty;
         }
       }
       if (clockDifference == delay) {
