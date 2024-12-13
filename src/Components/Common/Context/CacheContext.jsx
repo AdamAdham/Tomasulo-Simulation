@@ -7,9 +7,9 @@ export const CacheContext = createContext();
 // Create the provider component
 export const CacheProvider = ({ children }) => {
   const [cacheLatency, setCacheLatency] = useState(1); // Default value
-  const [cachePenalty, setCachePenalty] = useState(10); // Default value
-  const [cacheSize, setCacheSize] = useState(96); 
-  const [blockSize, setBlockSize] = useState(32); 
+  const [cachePenalty, setCachePenalty] = useState(5); // Default value
+  const [cacheSize, setCacheSize] = useState(128);
+  const [blockSize, setBlockSize] = useState(32);
   const [cache, setCache] = useState([]);
   const [validity, setValidity] = useState([]);
   const [tags, setTags] = useState([]);
@@ -30,7 +30,7 @@ export const CacheProvider = ({ children }) => {
       tagsTemp.push("empty");
       validityTemp.push(0);
     }
-    
+
     setCache(cacheTemp);
     setValidity(validityTemp);
     setTags(tagsTemp);

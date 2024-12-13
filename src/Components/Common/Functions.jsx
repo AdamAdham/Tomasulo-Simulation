@@ -992,7 +992,7 @@ const endExecStation = (
       if (loadStoreOpcodes.includes(row.opcode)) {
         if (!row.memoryCacheDetails.hit) {
           // Miss
-          delay = cachePenalty;
+          delay = Math.max(latency, cachePenalty);
         }
       }
       if (clockDifference == delay) {
