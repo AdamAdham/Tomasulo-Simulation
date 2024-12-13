@@ -112,12 +112,25 @@ const InstructionSelection = () => {
     setR3(event.target.value);
   };
   const handleImmediateChange = (event) => {
-    let value = parseInt(event.target.value, 10); // Convert to integer
+    const input = event.target.value.trim(); // Get the input as a string and trim whitespace
+
+    if (input === "" || input === "-") {
+      // Allow empty or '-' to let the user complete the input
+      setImmediate(input); // Temporarily store as a string
+      return;
+    }
+
+    let value = parseInt(input, 10); // Convert to integer
+    console.log(value);
+
     if (isNaN(value)) {
       value = 0; // Default to 0 if the input is not a valid number
-    } else if (value > 65535) {
-      value = 65535;
+    } else if (value > 32767) {
+      value = 32767; // Clamp to maximum for signed 16-bit
+    } else if (value < -32768) {
+      value = -32768; // Clamp to minimum for signed 16-bit
     }
+
     setImmediate(value);
   };
 
