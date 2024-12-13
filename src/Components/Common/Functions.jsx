@@ -21,6 +21,86 @@ import {
   originalWrite,
 } from "./Context/MemoryAccess";
 
+const twosComplementToDecimal = (binary) => {
+  // Validate input
+  if (!/^[01]+$/.test(binary)) {
+    throw new Error("Input must be a string of 0s and 1s");
+  }
+
+  const isNegative = binary[0] === "1"; // Check if the number is negative
+
+  if (!isNegative) {
+    // If positive, convert directly
+    return parseInt(binary, 2);
+  } else {
+    // If negative, perform two's complement
+    const n = binary.length;
+
+    // Invert bits
+    let inverted = binary
+      .split("")
+      .map((bit) => (bit === "0" ? "1" : "0"))
+      .join("");
+
+    // Add 1 to the inverted binary
+    let carry = 1;
+    let magnitudeBinary = "";
+    for (let i = n - 1; i >= 0; i--) {
+      if (inverted[i] === "1" && carry === 1) {
+        magnitudeBinary = "0" + magnitudeBinary;
+      } else if (inverted[i] === "0" && carry === 1) {
+        magnitudeBinary = "1" + magnitudeBinary;
+        carry = 0;
+      } else {
+        magnitudeBinary = inverted[i] + magnitudeBinary;
+      }
+    }
+
+    // Convert the magnitude to decimal
+    const magnitudeDecimal = parseInt(magnitudeBinary, 2);
+    return -magnitudeDecimal;
+  }
+};
+
+const decimalToTwosComplement = (decimal) => {
+  const bits = 64; // Set the number of bits to 64
+
+  if (decimal >= 0) {
+    // For positive numbers, simply convert to binary
+    let binary = decimal.toString(2);
+    // Ensure it is padded to 64 bits
+    return binary.padStart(bits, "0");
+  } else {
+    // For negative numbers, convert to two's complement
+    let binary = Math.abs(decimal).toString(2);
+    // Ensure it fits the specified number of bits
+    binary = binary.padStart(bits, "0");
+
+    // Invert the bits
+    let inverted = binary
+      .split("")
+      .map((bit) => (bit === "0" ? "1" : "0"))
+      .join("");
+
+    // Add 1 to the inverted binary number
+    let carry = 1;
+    let result = "";
+    for (let i = inverted.length - 1; i >= 0; i--) {
+      if (inverted[i] === "1" && carry === 1) {
+        result = "0" + result;
+      } else if (inverted[i] === "0" && carry === 1) {
+        result = "1" + result;
+        carry = 0;
+      } else {
+        result = inverted[i] + result;
+      }
+    }
+
+    // Return the two's complement representation
+    return result;
+  }
+};
+
 export const isNumberLessThan = (value, max) => {
   let temp = parseInt(value, 10); // Convert to integer
   if (isNaN(temp)) {
@@ -800,7 +880,7 @@ const startExecStation = (
               }
             }
             // console.log(readValue);
-            readValue = parseInt(readValue, 2);
+            readValue = twosComplementToDecimal(readValue);
             // console.log(readValue);
 
             let loadData = readValue;
@@ -844,7 +924,10 @@ const startExecStation = (
             }
             writeData = parseInt(writeData);
 
-            let storeBinary = writeData.toString(2).padStart(64, "0");
+            let storeBinary = decimalToTwosComplement(writeData).padStart(
+              64,
+              "0"
+            );
 
             console.log(storeBinary);
 
